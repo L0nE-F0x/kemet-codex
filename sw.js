@@ -4,7 +4,7 @@
    images stay network-first (they are decorative and large). */
 'use strict';
 
-const VERSION = 'kemet-v4';
+const VERSION = 'kemet-v5';
 const SHELL = [
   './',
   './index.html',

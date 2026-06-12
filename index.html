@@ -425,7 +425,7 @@ function setBookmarks(b){ try { localStorage.setItem('kemet.bookmarks', JSON.str
 const PYR_H = 146.6, PYR_B = 115.18; // Khufu height, half-base (metres)
 let scene, camera, renderer, controls, clock;
 let pyramidGroup, coreMats = [], casingMesh, capMesh, ghostMesh, interiorGroup, hotspotGroup, measureGroup, ground;
-let sceneryGroup, sceneryCasings = [], sphinxGroup, sphinxGhost, sandMesh, wallMat;
+let sceneryGroup, sceneryCasings = [], sceneryTips = [], allCoreMats = [], sphinxGroup, sphinxGhost, sandMesh, wallMat;
 let dust, dustBase, stars, skyGroup, skyFadeMats = [], sunSprite, sun, hemi, fill;
 const TEX = {}; // shared procedural textures, built once in initScene
 let webglOK = false;
@@ -698,13 +698,18 @@ function buildGround(){
 /* ---- Stepped masonry core shared by every pyramid on the plateau ---- */
 function makeCoreMats(){
   // limestone tint variation; all share one masonry texture + bump
-  return [0xfdf2dd, 0xf2e3c8, 0xfff8e8, 0xf7ead2].map(c => new THREE.MeshStandardMaterial({
+  const mats = [0xfdf2dd, 0xf2e3c8, 0xfff8e8, 0xf7ead2].map(c => new THREE.MeshStandardMaterial({
     color: c, roughness: .94, metalness: 0, map: TEX.block, bumpMap: TEX.blockBump, bumpScale: .4 }));
+  allCoreMats.push.apply(allCoreMats, mats); // cutaway X-ray fades every core on the plateau
+  return mats;
 }
 let graniteMat = null;
 function makeSteppedCore(height, halfBase, courses, mats, graniteBase){
-  if (!graniteMat) graniteMat = new THREE.MeshStandardMaterial({
-    color: 0xcf9a85, roughness: .85, map: TEX.block, bumpMap: TEX.blockBump, bumpScale: .35 });
+  if (!graniteMat){
+    graniteMat = new THREE.MeshStandardMaterial({
+      color: 0xcf9a85, roughness: .85, map: TEX.block, bumpMap: TEX.blockBump, bumpScale: .35 });
+    allCoreMats.push(graniteMat);
+  }
   const g = new THREE.Group();
   const n = IS_MOBILE ? Math.max(8, Math.round(courses * .55)) : courses;
   const shadows = !IS_MOBILE;
@@ -772,13 +777,15 @@ function buildInterior(){
   interiorGroup = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color: 0xd8b88a, roughness: .6, emissive: 0x9a7434, emissiveIntensity: .5 });
   const granite = new THREE.MeshStandardMaterial({ color: 0xb07a6a, roughness: .55, emissive: 0x7a4434, emissiveIntensity: .45 });
-  function box(w, h, d, x, y, z, rx, m){
+  function boxIn(grp, w, h, d, x, y, z, rx, m){
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m || mat);
     mesh.position.set(x, y, z);
     if (rx) mesh.rotation.x = rx;
-    interiorGroup.add(mesh);
+    grp.add(mesh);
     return mesh;
   }
+  // Khufu (world origin)
+  const box = (w,h,d,x,y,z,rx,m) => boxIn(interiorGroup, w,h,d,x,y,z,rx,m);
   box(10.5, 5.9, 5.3, 6, 46, 8, 0, granite);            // King's Chamber
   box(5.8, 6.2, 5.3, 0, 24, 2);                          // Queen's Chamber
   box(14, 4.5, 8.2, 0, -24, 0);                          // Subterranean Chamber
@@ -786,6 +793,35 @@ function buildInterior(){
   box(1.4, 1.4, 122, 0, -3.5, -57, 0.357);               // Descending passage
   box(1.4, 1.4, 64, 0, 14, -64, -0.38);                  // Ascending passage
   box(1.4, 1.4, 34, 0, 21, -15, 0);                      // Horizontal passage
+
+  // Khafre: two entrances, simpler ground-level system (Belzoni 1818)
+  const kfMon = MONUMENTS.find(m => m.id === 'khafre');
+  if (kfMon){
+    const o = monOrigin(kfMon);
+    const g = new THREE.Group();
+    g.position.set(o[0], o[1], o[2]);
+    boxIn(g, 14.15, 6.8, 5, 0, 3.4, 0);                  // burial chamber (Belzoni's)
+    boxIn(g, 2.6, 1.3, 1.1, -3, .8, 0, 0, granite);      // sunken sarcophagus
+    boxIn(g, 1.3, 1.3, 70, 0, 5.6, -72, 0.31);           // upper descending passage
+    boxIn(g, 1.3, 1.3, 56, 0, .8, -36, 0);               // horizontal passage to chamber
+    boxIn(g, 1.3, 1.3, 36, 0, -1.8, -106, -0.42);        // lower entrance passage (from the pavement)
+    boxIn(g, 3, 2.6, 10.4, -5, 1.3, -58);                // abandoned side chamber
+    interiorGroup.add(g);
+  }
+  // Menkaure: panelled chamber, antechamber, granite vault below base level
+  const mkMon = MONUMENTS.find(m => m.id === 'menkaure');
+  if (mkMon){
+    const o = monOrigin(mkMon);
+    const g = new THREE.Group();
+    g.position.set(o[0], o[1], o[2]);
+    boxIn(g, 14.2, 3.9, 3.8, 0, 2, 4);                   // antechamber
+    boxIn(g, 2.6, 3.4, 6.6, -4, -3.2, 3, 0, granite);    // granite burial chamber (vaulted)
+    boxIn(g, 3.2, 2.3, 3.4, 0, 1.2, -22);                // palace-façade panelled chamber
+    boxIn(g, 1.2, 1.2, 40, 0, 1.6, -42, 0.45);           // descending passage
+    boxIn(g, 1.1, 1.1, 16, 0, .8, -12, 0);               // portcullis corridor
+    boxIn(g, 1.8, 1.6, 5, 3, -1.2, 8);                   // niche room
+    interiorGroup.add(g);
+  }
   interiorGroup.visible = false;
   scene.add(interiorGroup);
 }
@@ -810,8 +846,9 @@ function buildScenery(){
         const th = cfg.height * .24;
         const tipGeo = new THREE.ConeGeometry(cfg.halfBase * Math.SQRT2 * .245, th, 4, 1).rotateY(Math.PI / 4);
         scaleUV(tipGeo, 5, 4);
-        const tip = new THREE.Mesh(tipGeo,
-          new THREE.MeshStandardMaterial({ color: 0xece1c8, roughness: .38, map: TEX.casing }));
+        const tipMat = new THREE.MeshStandardMaterial({ color: 0xece1c8, roughness: .38, map: TEX.casing, transparent: true });
+        sceneryTips.push(tipMat);
+        const tip = new THREE.Mesh(tipGeo, tipMat);
         tip.position.y = cfg.height - th / 2 + .3;
         tip.castShadow = shadows;
         g.add(tip);
@@ -1125,32 +1162,46 @@ function mkLine(points, color, dashed){
 }
 
 const measureSets = {};
+/* Base / height / slope rulers for any pyramid monument, origin-aware */
+function addPyramidMeasures(prefix, monId, hb, h, baseTxt, heightTxt, slopeTxt){
+  const mon = MONUMENTS.find(m => m.id === monId);
+  if (!mon) return;
+  const o = monOrigin(mon);
+  const gold = 0xE2C893;
+  const v = (x,y,z) => new THREE.Vector3(x + o[0], y + o[1], z + o[2]);
+
+  const gBase = new THREE.Group();
+  gBase.add(mkLine([v(-hb,2,hb+18), v(hb,2,hb+18)], gold));
+  gBase.add(mkLine([v(-hb,2,hb+10), v(-hb,2,hb+26)], gold));
+  gBase.add(mkLine([v(hb,2,hb+10), v(hb,2,hb+26)], gold));
+  const lb = textSprite(baseTxt); lb.position.copy(v(0, 16, hb + 34)); gBase.add(lb);
+  gBase.visible = false; measureGroup.add(gBase); measureSets[prefix + '-base'] = gBase;
+
+  const gH = new THREE.Group();
+  gH.add(mkLine([v(hb+26,0,0), v(hb+26,h,0)], gold, true));
+  gH.add(mkLine([v(0,h,0), v(hb+26,h,0)], gold, true));
+  const lh = textSprite(heightTxt); lh.position.copy(v(hb + 36, h / 2, 0)); gH.add(lh);
+  gH.visible = false; measureGroup.add(gH); measureSets[prefix + '-height'] = gH;
+
+  const gS = new THREE.Group();
+  const basePt = v(0, 1.5, hb);
+  gS.add(mkLine([basePt, v(0, 1.5, hb + 52)], gold));
+  const dir = new THREE.Vector3(0, h, -hb).normalize().multiplyScalar(Math.min(64, hb * .58));
+  gS.add(mkLine([basePt, basePt.clone().add(dir)], gold));
+  const ls = textSprite(slopeTxt); ls.position.copy(v(0, 26, hb + 44)); gS.add(ls);
+  gS.visible = false; measureGroup.add(gS); measureSets[prefix + '-slope'] = gS;
+}
 function buildMeasures(){
   measureGroup = new THREE.Group();
   const gold = 0xE2C893;
   const v = (x,y,z) => new THREE.Vector3(x,y,z);
 
-  // Great Pyramid
-  const gBase = new THREE.Group();
-  gBase.add(mkLine([v(-PYR_B,2,PYR_B+18), v(PYR_B,2,PYR_B+18)], gold));
-  gBase.add(mkLine([v(-PYR_B,2,PYR_B+10), v(-PYR_B,2,PYR_B+26)], gold));
-  gBase.add(mkLine([v(PYR_B,2,PYR_B+10), v(PYR_B,2,PYR_B+26)], gold));
-  const lb = textSprite('230.36 m · 440 cubits'); lb.position.set(0, 16, PYR_B + 34); gBase.add(lb);
-  gBase.visible = false; measureGroup.add(gBase); measureSets['gp-base'] = gBase;
-
-  const gH = new THREE.Group();
-  gH.add(mkLine([v(PYR_B+26,0,0), v(PYR_B+26,PYR_H,0)], gold, true));
-  gH.add(mkLine([v(0,PYR_H,0), v(PYR_B+26,PYR_H,0)], gold, true));
-  const lh = textSprite('146.59 m · 280 cubits (orig.)'); lh.position.set(PYR_B + 36, PYR_H / 2, 0); gH.add(lh);
-  gH.visible = false; measureGroup.add(gH); measureSets['gp-height'] = gH;
-
-  const gS = new THREE.Group();
-  const basePt = v(0, 1.5, PYR_B);
-  gS.add(mkLine([basePt, v(0, 1.5, PYR_B + 52)], gold));
-  const dir = v(0, PYR_H, -PYR_B).normalize().multiplyScalar(64);
-  gS.add(mkLine([basePt, basePt.clone().add(dir)], gold));
-  const ls = textSprite("51° 50′ — seked 5½"); ls.position.set(0, 26, PYR_B + 44); gS.add(ls);
-  gS.visible = false; measureGroup.add(gS); measureSets['gp-slope'] = gS;
+  addPyramidMeasures('gp', 'great-pyramid', PYR_B, PYR_H,
+    '230.36 m · 440 cubits', '146.59 m · 280 cubits (orig.)', "51° 50′ — seked 5½");
+  addPyramidMeasures('kf', 'khafre', 107.6, 136.4,
+    '215.25 m · 411 cubits', '143.5 m orig · 136.4 m today', "53° 10′ — seked 5¼");
+  addPyramidMeasures('mk', 'menkaure', 51.4, 65.5,
+    '102.2 × 104.6 m', '65.5 m orig · ≈ 61 m today', "≈ 51° 20′");
 
   // Sphinx
   const sxMon = MONUMENTS.find(m => m.id === 'sphinx');
@@ -1681,7 +1732,9 @@ function applyVis(){
   capMesh.visible = visCur.cap > .03 && pyramidGroup.visible;
   ghostMesh.material.opacity = visCur.ghost;
   ghostMesh.visible = visCur.ghost > .01;
-  sceneryCasings.forEach(m => { m.opacity = visCur.casing; m.visible = visCur.casing > .02; });
+  const sceneCasOp = visCur.casing * (cut ? .06 : 1);
+  sceneryCasings.forEach(m => { m.opacity = sceneCasOp; m.visible = sceneCasOp > .02; });
+  sceneryTips.forEach(m => { m.opacity = cut ? .08 : 1; });
   if (sphinxGhost){
     sphinxGhost.children.forEach(l => { l.material.opacity = visCur.ghost * .85; });
     sphinxGhost.visible = visCur.ghost > .01;
@@ -1714,7 +1767,7 @@ function applyView(mode){
   const cut = mode === 'cutaway';
   if (webglOK){
     interiorGroup.visible = cut && pyramidGroup.visible;
-    coreMats.forEach(m => { m.transparent = cut; m.opacity = cut ? .1 : 1; m.depthWrite = !cut; m.needsUpdate = true; });
+    allCoreMats.forEach(m => { m.transparent = cut; m.opacity = cut ? .1 : 1; m.depthWrite = !cut; m.needsUpdate = true; });
     ground.material.transparent = true;
     ground.material.opacity = cut ? .35 : 1;
   }

@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>KEMET CODEX — An Immersive Atlas of Ancient Egypt</title>
+<meta name="description" content="Explore the Giza plateau in cinematic 3D, scrub through 5,000 years of history, and weigh mainstream Egyptology against the most compelling alternative theories — with clear attribution.">
+<meta name="theme-color" content="#0B132B">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,10 95,88 5,88' fill='%23C9A86C'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { night:'#0B132B', nightdeep:'#070D1F', gold:'#C9A86C', goldlight:'#E2C893', sand:'#F5EDE0', lapis:'#2E5A88', lapislight:'#6E94BD', teal:'#3E8E7E' },
+    fontFamily: { serif:['"Playfair Display"','Georgia','serif'], sans:['Inter','system-ui','sans-serif'] }
+  }}
+};
+</script>
+<style>
+  :root { color-scheme: dark; }
+  html, body { height: 100%; margin: 0; background: #070D1F; overscroll-behavior: none; }
+  body { font-family: Inter, system-ui, sans-serif; }
+
+  /* ---- Sky (CSS crossfade layers behind transparent WebGL canvas) ---- */
+  .sky-layer { position: fixed; inset: 0; z-index: 0; transition: opacity 1.8s ease; pointer-events: none; }
+  #scene-canvas { position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%; display: block; touch-action: none; }
+  #vignette { position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 42%, transparent 48%, rgba(4,7,15,.38) 82%, rgba(4,7,15,.62) 100%); }
+
+  .glass { background: rgba(11,19,43,.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(201,168,108,.22); box-shadow: 0 18px 50px rgba(0,0,0,.45); }
+  .glass-soft { background: rgba(11,19,43,.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(201,168,108,.16); }
+
+  .btn-gold { background: linear-gradient(135deg,#C9A86C,#a9854b); color: #0B132B; font-weight: 600;
+    transition: transform .25s ease, box-shadow .25s ease, filter .25s ease; box-shadow: 0 6px 24px rgba(201,168,108,.28); }
+  .btn-gold:hover { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 10px 32px rgba(201,168,108,.4); }
+  .btn-gold:active { transform: translateY(0); }
+
+  .chip { border: 1px solid rgba(201,168,108,.3); color: #E2C893; transition: all .2s ease; }
+  .chip:hover { background: rgba(201,168,108,.12); }
+  .chip.active { background: #C9A86C; color: #0B132B; font-weight: 600; border-color: #C9A86C; }
+
+  .tab-btn { color: rgba(245,237,224,.55); border-bottom: 2px solid transparent; transition: all .2s ease; }
+  .tab-btn:hover { color: rgba(245,237,224,.85); }
+  .tab-btn.active { color: #E2C893; border-bottom-color: #C9A86C; }
+
+  .theory-mainstream { border-left: 3px solid #6E94BD; background: rgba(46,90,136,.13); }
+  .theory-alt        { border-left: 3px solid #C9A86C; background: rgba(201,168,108,.09); }
+  .theory-recent     { border-left: 3px solid #3E8E7E; background: rgba(62,142,126,.1); }
+
+  .kid-card { background: linear-gradient(135deg, rgba(201,168,108,.16), rgba(110,148,189,.12));
+    border: 1px dashed rgba(226,200,147,.5); border-radius: 14px; }
+  details.deeper > summary { cursor: pointer; color: #E2C893; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+  details.deeper > summary::marker { color: #C9A86C; }
+
+  /* ---- Context panel: desktop sidebar / mobile bottom sheet ---- */
+  #panel { position: fixed; z-index: 20; display: flex; flex-direction: column;
+    transition: transform .45s cubic-bezier(.22,.9,.3,1), opacity .45s ease; }
+  @media (min-width: 1024px) {
+    #panel { top: 84px; right: 20px; bottom: 132px; width: 410px; border-radius: 18px; }
+    #panel-handle, #panel-toggle { display: none; }
+  }
+  @media (max-width: 1023.5px) {
+    #panel { left: 0; right: 0; bottom: 0; max-height: 66vh; border-radius: 20px 20px 0 0; transform: translateY(calc(100% + 10px)); }
+    body.panel-open #panel { transform: translateY(0); }
+    body.panel-open #timeline { opacity: 0; pointer-events: none; }
+    body.panel-open #panel-toggle { opacity: 0; pointer-events: none; }
+    #panel-toggle { bottom: 182px !important; }
+  }
+  #panel-body { overflow-y: auto; overscroll-behavior: contain; }
+  #panel-body::-webkit-scrollbar, .overlay-scroll::-webkit-scrollbar { width: 8px; }
+  #panel-body::-webkit-scrollbar-thumb, .overlay-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,108,.3); border-radius: 8px; }
+
+  /* ---- Timeline ---- */
+  #timeline { position: fixed; z-index: 18; left: 50%; transform: translateX(-50%); bottom: 18px;
+    width: min(880px, calc(100% - 28px)); transition: opacity .3s ease; }
+  @media (min-width: 1024px) { #timeline { width: min(820px, calc(100% - 500px)); left: calc((100% - 450px) / 2); } }
+  #tl-track { position: relative; height: 38px; cursor: pointer; touch-action: none; }
+  #tl-rail { position: absolute; left: 0; right: 0; top: 17px; height: 4px; border-radius: 4px; background: rgba(245,237,224,.16); }
+  #tl-progress { position: absolute; left: 0; top: 17px; height: 4px; border-radius: 4px;
+    background: linear-gradient(90deg,#8a6f3f,#C9A86C); box-shadow: 0 0 12px rgba(201,168,108,.5); transition: width .35s cubic-bezier(.22,.9,.3,1); }
+  .tl-tick { position: absolute; top: 13px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%;
+    background: #11203f; border: 2px solid rgba(201,168,108,.45); transition: all .25s ease; }
+  .tl-tick.passed { background: #C9A86C; border-color: #C9A86C; }
+  #tl-handle { position: absolute; top: 6px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #E2C893, #C9A86C 60%, #8a6f3f); border: 2px solid #F5EDE0;
+    box-shadow: 0 0 0 5px rgba(201,168,108,.18), 0 4px 14px rgba(0,0,0,.5);
+    transition: left .35s cubic-bezier(.22,.9,.3,1), transform .15s ease; }
+  #tl-track:active #tl-handle { transform: scale(1.18); }
+  .tl-label { position: absolute; top: 40px; transform: translateX(-50%); font-size: 10px; letter-spacing: .08em;
+    text-transform: uppercase; color: rgba(245,237,224,.45); white-space: nowrap; transition: color .25s ease; }
+  .tl-label.active { color: #E2C893; font-weight: 600; }
+  @media (max-width: 767.5px) { .tl-label { display: none; } .tl-label.active { display: block; } }
+
+  /* ---- Full-screen overlays (Theory Lab / Vault) ---- */
+  .overlay { position: fixed; inset: 0; z-index: 40; display: none; overflow-y: auto;
+    background: linear-gradient(180deg, rgba(7,13,31,.97), rgba(11,19,43,.97)); }
+  .overlay.open { display: block; animation: fadeUp .45s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  /* ---- Modal + lightbox ---- */
+  #modal { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; padding: 18px; }
+  #modal.open { display: flex; }
+  #modal-backdrop { position: absolute; inset: 0; background: rgba(4,7,15,.7); backdrop-filter: blur(6px); }
+  #modal-card { position: relative; width: min(760px, 100%); max-height: 88vh; overflow-y: auto;
+    border-radius: 18px; animation: fadeUp .35s ease; }
+  #lightbox { position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center;
+    background: rgba(4,7,15,.92); padding: 24px; cursor: zoom-out; }
+  #lightbox.open { display: flex; animation: fadeUp .25s ease; }
+  #lightbox img { max-width: 100%; max-height: 82vh; border-radius: 12px; box-shadow: 0 24px 80px rgba(0,0,0,.7); }
+  .gallery-img { cursor: zoom-in; transition: transform .25s ease; }
+  .gallery-img:hover { transform: scale(1.015); }
+
+  /* ---- Hero ---- */
+  #hero { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; padding: 24px;
+    background: radial-gradient(ellipse at 50% 70%, rgba(7,13,31,.1) 0%, rgba(7,13,31,.55) 75%, rgba(7,13,31,.8) 100%);
+    transition: opacity 1s ease; }
+  #hero.hidden-out { opacity: 0; pointer-events: none; }
+  .hero-rule { width: 110px; height: 1px; background: linear-gradient(90deg, transparent, #C9A86C, transparent); }
+
+  #app { transition: opacity .9s ease .25s; }
+  #app.veiled { opacity: 0; pointer-events: none; }
+
+  .fade-swap { animation: fadeUp .3s ease; }
+  .pulse-dot { animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
+
+  .vault-card { transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; cursor: pointer; }
+  .vault-card:hover { transform: translateY(-4px); border-color: rgba(201,168,108,.55); box-shadow: 0 14px 36px rgba(0,0,0,.5); }
+
+  .data-row { display: flex; justify-content: space-between; gap: 14px; padding: 8px 0; border-bottom: 1px solid rgba(245,237,224,.08); }
+  .data-row dt { color: rgba(245,237,224,.55); font-size: 12.5px; }
+  .data-row dd { color: #F5EDE0; font-size: 12.5px; text-align: right; margin: 0; font-variant-numeric: tabular-nums; }
+
+  :focus-visible { outline: 2px solid #C9A86C; outline-offset: 2px; border-radius: 4px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  #toast { position: fixed; z-index: 70; bottom: 96px; left: 50%; transform: translate(-50%, 20px); opacity: 0;
+    transition: all .35s ease; pointer-events: none; max-width: min(520px, 90vw); text-align: center; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---- Module minimize / restore ---- */
+  .min-btn { position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(11,19,43,.92); border: 1px solid rgba(201,168,108,.35); color: rgba(245,237,224,.65);
+    font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    transition: all .2s ease; z-index: 5; }
+  .min-btn:hover { color: #E2C893; border-color: rgba(201,168,108,.7); }
+  .restore-chip { position: fixed; z-index: 22; display: none; align-items: center; gap: 6px;
+    font-size: 12px; color: #E2C893; padding: 8px 13px; border-radius: 999px; animation: fadeUp .3s ease; }
+  #scene-controls, #timeline { transition: transform .4s cubic-bezier(.22,.9,.3,1), opacity .35s ease; }
+  body.ctl-min #scene-controls { transform: translateX(-130%); opacity: 0; pointer-events: none; }
+  body.ctl-min #ctl-restore { display: flex; }
+  body.tl-min #timeline { transform: translate(-50%, 160%); opacity: 0; pointer-events: none; }
+  body.tl-min #tl-restore { display: flex; }
+  @media (min-width: 1024px) {
+    body.panel-min #panel { transform: translateX(calc(100% + 32px)); opacity: 0; pointer-events: none; }
+    body.panel-min #panel-restore { display: flex; }
+  }
+
+  /* ---- Night-sky bar (era star chart readout) ---- */
+  #sky-bar { position: fixed; top: 7.4rem; left: 50%; transform: translateX(-50%); z-index: 21;
+    display: none; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px;
+    max-width: min(640px, calc(100vw - 16px)); }
+  body.night-on #sky-bar { display: flex; animation: fadeUp .4s ease; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body class="bg-nightdeep text-sand antialiased">
+
+<h1 class="sr-only">Kemet Codex — an immersive educational atlas of ancient Egypt</h1>
+<div id="sr-live" class="sr-only" aria-live="polite"></div>
+
+<!-- Sky + 3D -->
+<div id="sky-a" class="sky-layer"></div>
+<div id="sky-b" class="sky-layer" style="opacity:0"></div>
+<canvas id="scene-canvas" aria-label="Interactive 3D view of the Giza plateau. Use the location list in the information panel for a non-visual alternative."></canvas>
+<div id="vignette"></div>
+
+<!-- WebGL fallback -->
+<div id="webgl-fallback" class="fixed inset-0 z-[5] hidden items-center justify-center p-6">
+  <div class="glass rounded-2xl max-w-xl p-8 text-center">
+    <svg viewBox="0 0 200 120" class="w-full max-w-xs mx-auto mb-6" role="img" aria-label="Cross-section diagram of the Great Pyramid">
+      <polygon points="100,8 192,112 8,112" fill="none" stroke="#C9A86C" stroke-width="2"/>
+      <rect x="92" y="56" width="18" height="9" fill="#2E5A88"/><text x="118" y="64" fill="#F5EDE0" font-size="8">King's Chamber</text>
+      <rect x="94" y="78" width="13" height="7" fill="#2E5A88"/><text x="114" y="84" fill="#F5EDE0" font-size="8">Queen's Chamber</text>
+      <line x1="100" y1="118" x2="100" y2="112" stroke="#3E8E7E" stroke-width="6"/><text x="108" y="119" fill="#F5EDE0" font-size="8">Subterranean</text>
+      <line x1="70" y1="100" x2="101" y2="62" stroke="#C9A86C" stroke-width="2" stroke-dasharray="3 2"/>
+    </svg>
+    <h2 class="font-serif text-xl text-goldlight mb-2">3D view unavailable</h2>
+    <p class="text-sm text-sand/70">Your browser couldn't start WebGL, so the plateau is shown as a diagram instead. Everything else — the timeline, knowledge panels, Theory Lab and Vault — works normally.</p>
+  </div>
+</div>
+
+<!-- ============ HERO ============ -->
+<header id="hero">
+  <p class="text-[11px] tracking-[.45em] uppercase text-gold/80 mb-5">An immersive atlas of ancient Kemet</p>
+  <h2 class="font-serif font-semibold text-5xl md:text-7xl tracking-wide text-sand" style="text-shadow:0 4px 30px rgba(0,0,0,.6)">KEMET&nbsp;CODEX</h2>
+  <div class="hero-rule my-6"></div>
+  <p class="max-w-xl text-sand/75 text-sm md:text-base leading-relaxed">
+    Orbit the pyramids and come face to face with the Sphinx. Scrub through five millennia and watch the plateau transform.
+    Weigh the consensus of Egyptology against its boldest challengers — every claim attributed, nothing sensationalized.
+  </p>
+  <button id="enter-btn" class="btn-gold mt-9 px-9 py-3.5 rounded-full text-sm tracking-[.18em] uppercase">Enter the Codex</button>
+  <p class="mt-7 text-[11px] text-sand/40 max-w-md">Educational exploration, not endorsement — mainstream consensus and alternative hypotheses are clearly labeled and attributed throughout.</p>
+</header>
+
+<!-- ============ MAIN APP ============ -->
+<div id="app" class="veiled">
+
+  <!-- Top nav -->
+  <nav class="fixed top-0 inset-x-0 z-25 glass-soft" style="z-index:25" aria-label="Main">
+    <div class="flex items-center justify-between px-4 md:px-6 h-14">
+      <button id="nav-home" class="flex items-center gap-2.5 group" aria-label="Kemet Codex home — return to explorer">
+        <svg viewBox="0 0 100 100" class="w-6 h-6"><polygon points="50,12 95,88 5,88" fill="none" stroke="#C9A86C" stroke-width="7"/><polygon points="50,34 72,88 28,88" fill="#C9A86C" opacity=".55"/></svg>
+        <span class="font-serif text-base tracking-[.22em] text-goldlight group-hover:text-gold transition-colors hidden xs:inline sm:inline">KEMET CODEX</span>
+      </button>
+      <div class="flex items-center gap-1 md:gap-2 text-[12px] md:text-[13px]">
+        <button data-nav="explorer" class="nav-btn px-2.5 md:px-3 py-1.5 rounded-md text-gold bg-gold/10"><span class="hidden sm:inline">Explorer</span><span class="sm:hidden">Explore</span></button>
+        <button data-nav="lab" class="nav-btn px-2.5 md:px-3 py-1.5 rounded-md text-sand/70 hover:text-sand hover:bg-sand/5 transition-colors"><span class="hidden sm:inline">Theory </span>Lab</button>
+        <button data-nav="vault" class="nav-btn px-2.5 md:px-3 py-1.5 rounded-md text-sand/70 hover:text-sand hover:bg-sand/5 transition-colors">Vault</button>
+        <button id="family-btn" class="px-2.5 md:px-3 py-1.5 rounded-md text-sand/70 hover:text-sand hover:bg-sand/5 transition-colors" aria-pressed="false" title="Family Mode — kid-friendly explanations">
+          <span class="sm:hidden" aria-hidden="true">✦</span><span class="hidden sm:inline">✦ Family</span>
+        </button>
+        <button data-nav="about" class="nav-btn px-3 py-1.5 rounded-md text-sand/70 hover:text-sand hover:bg-sand/5 transition-colors hidden sm:block">About</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Monument switcher -->
+  <div id="monument-switch" class="fixed top-[4.2rem] left-1/2 -translate-x-1/2 z-[21] glass rounded-full p-1 flex gap-1" role="group" aria-label="Choose monument"></div>
+
+  <!-- Night-sky readout (visible in Night & Stars mode) -->
+  <div id="sky-bar" class="glass rounded-2xl px-3 py-2" role="group" aria-label="Night sky settings">
+    <span id="sky-info" class="text-[11px] text-sand/75 px-1.5 leading-snug"></span>
+    <span class="flex gap-1.5">
+      <button data-skymoment="dawn" class="chip rounded-full px-3 py-1 text-[11.5px] active" title="The sky just before sunrise on the spring equinox — the constellation holding the sun defines the zodiacal Age">♈ Equinox dawn</button>
+      <button data-skymoment="orion" class="chip rounded-full px-3 py-1 text-[11.5px]" title="The moment Alnitak (Orion's Belt) crosses the southern meridian — compare it with the King's Chamber shaft">⭑ Orion culmination</button>
+    </span>
+  </div>
+
+  <!-- Scene controls (left floating) -->
+  <div id="scene-controls" class="fixed left-3 md:left-5 top-32 lg:top-20 z-20 flex flex-col gap-2" role="group" aria-label="3D view controls">
+    <button id="ctl-min" class="min-btn" aria-label="Minimize view controls" title="Minimize controls">—</button>
+    <div class="glass rounded-xl p-1.5 flex flex-col gap-1">
+      <p class="text-[9px] uppercase tracking-[.2em] text-sand/40 px-2 pt-1">Camera</p>
+      <button data-preset="aerial" class="ctl-btn text-left text-[12px] px-3 py-1.5 rounded-lg hover:bg-gold/15 text-sand/80" aria-label="Aerial camera view">◈ Aerial</button>
+      <button data-preset="ground" class="ctl-btn text-left text-[12px] px-3 py-1.5 rounded-lg hover:bg-gold/15 text-sand/80" aria-label="Ground level camera view">◈ Ground</button>
+      <button data-preset="front" class="ctl-btn text-left text-[12px] px-3 py-1.5 rounded-lg hover:bg-gold/15 text-sand/80" aria-label="Front camera view">◈ Front</button>
+    </div>
+    <div class="glass rounded-xl p-1.5 flex flex-col gap-1">
+      <p class="text-[9px] uppercase tracking-[.2em] text-sand/40 px-2 pt-1">View</p>
+      <button id="view-exterior" class="view-btn text-left text-[12px] px-3 py-1.5 rounded-lg text-gold bg-gold/15" aria-pressed="true">⬒ Exterior</button>
+      <button id="view-cutaway" class="view-btn text-left text-[12px] px-3 py-1.5 rounded-lg hover:bg-gold/15 text-sand/80" aria-pressed="false">⬓ Cutaway</button>
+      <button id="view-night" class="text-left text-[12px] px-3 py-1.5 rounded-lg hover:bg-gold/15 text-sand/80" aria-pressed="false">☾ Night &amp; Stars</button>
+      <button id="tour-btn" class="text-left text-[12px] px-3 py-1.5 rounded-lg hover:bg-gold/15 text-sand/80" aria-pressed="false">✈ Fly Inside</button>
+    </div>
+  </div>
+
+  <!-- Mobile panel toggle -->
+  <button id="panel-toggle" class="fixed right-4 bottom-24 z-[22] glass rounded-full px-5 py-3 text-[13px] text-goldlight lg:hidden transition-opacity" aria-expanded="false" aria-controls="panel">ⓘ Details</button>
+
+  <!-- Restore chips (appear when a module is minimized) -->
+  <button id="ctl-restore" class="restore-chip glass left-3 md:left-5 top-32 lg:top-20" aria-label="Restore view controls">◈ Controls</button>
+  <button id="tl-restore" class="restore-chip glass bottom-5 left-1/2 -translate-x-1/2" aria-label="Restore timeline">▴ Timeline</button>
+  <button id="panel-restore" class="restore-chip glass right-4 top-20" aria-label="Restore information panel">ⓘ Details</button>
+
+  <!-- Context panel -->
+  <aside id="panel" class="glass" aria-label="Information panel">
+    <button id="panel-handle" class="w-full pt-2.5 pb-1 lg:hidden" aria-label="Close details panel"><span class="block mx-auto w-12 h-1.5 rounded-full bg-sand/25"></span></button>
+    <div class="px-5 pt-3 pb-0">
+      <div id="panel-era-chip" class="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[.18em] text-gold/90 bg-gold/10 border border-gold/25 rounded-full px-3 py-1 mb-2"></div>
+      <div class="flex items-start justify-between gap-2">
+        <h2 id="panel-title" class="font-serif text-[22px] leading-tight text-sand"></h2>
+        <div class="flex items-center gap-2 shrink-0 mt-1.5">
+          <button id="panel-back" class="hidden text-[11px] text-sand/55 hover:text-gold transition-colors" aria-label="Back to monument overview">← All</button>
+          <button id="panel-min" class="hidden lg:block text-[15px] leading-none text-sand/45 hover:text-gold transition-colors" aria-label="Minimize information panel" title="Minimize panel">—</button>
+        </div>
+      </div>
+      <p id="panel-sub" class="text-[12px] text-sand/55 mt-0.5"></p>
+      <div class="flex gap-5 mt-3 border-b border-sand/10" role="tablist" aria-label="Panel sections">
+        <button class="tab-btn active text-[12.5px] pb-2" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+        <button class="tab-btn text-[12.5px] pb-2" data-tab="data" role="tab" aria-selected="false">Measurements</button>
+        <button class="tab-btn text-[12.5px] pb-2" data-tab="theories" role="tab" aria-selected="false">Theories</button>
+      </div>
+    </div>
+    <div id="panel-body" class="flex-1 px-5 py-4 text-[13.5px] leading-relaxed text-sand/85"></div>
+  </aside>
+
+  <!-- Timeline -->
+  <div id="timeline">
+    <div class="text-center mb-1.5">
+      <span id="era-readout" class="glass-soft inline-flex items-baseline gap-2.5 rounded-full px-5 py-1.5">
+        <span id="era-name" class="font-serif text-[15px] text-goldlight"></span>
+        <span id="era-date" class="text-[11px] tracking-[.14em] uppercase text-sand/55"></span>
+      </span>
+    </div>
+    <div class="glass rounded-2xl px-10 pt-2 pb-8 relative">
+      <button id="tl-min" class="min-btn" aria-label="Minimize timeline" title="Minimize timeline">—</button>
+      <div id="tl-track" role="slider" tabindex="0" aria-label="Historical era timeline" aria-valuemin="0" aria-valuemax="7" aria-valuenow="2" aria-valuetext="Old Kingdom">
+        <div id="tl-rail"></div>
+        <div id="tl-progress"></div>
+        <div id="tl-ticks"></div>
+        <div id="tl-handle"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ THEORY LAB ============ -->
+<section id="overlay-lab" class="overlay overlay-scroll" role="dialog" aria-modal="true" aria-label="Theory Comparison Lab">
+  <div class="max-w-6xl mx-auto px-4 md:px-8 py-10 pb-20">
+    <div class="flex items-start justify-between gap-4 mb-2">
+      <div>
+        <p class="text-[11px] tracking-[.4em] uppercase text-gold/80 mb-2">Theory Comparison Lab</p>
+        <h2 class="font-serif text-3xl md:text-4xl text-sand">Where Evidence Meets Hypothesis</h2>
+      </div>
+      <button class="overlay-close glass-soft rounded-full w-10 h-10 text-sand/70 hover:text-gold text-lg shrink-0" aria-label="Close Theory Lab">✕</button>
+    </div>
+    <p class="text-sand/60 text-sm max-w-2xl mb-7">Flagship debates presented side by side. Blue is the mainstream archaeological consensus, gold the alternative hypotheses, green the most recent scientific findings. Every claim is attributed.</p>
+    <div id="lab-chips" class="flex flex-wrap gap-2 mb-8" role="tablist" aria-label="Debates"></div>
+    <div id="lab-content"></div>
+    <p class="mt-10 text-[11px] text-sand/40 border-t border-sand/10 pt-5">Educational exploration, not endorsement. Alternative hypotheses are presented for critical evaluation alongside the evidence used to support and to challenge them.</p>
+  </div>
+</section>
+
+<!-- ============ KNOWLEDGE VAULT ============ -->
+<section id="overlay-vault" class="overlay overlay-scroll" role="dialog" aria-modal="true" aria-label="Knowledge Vault">
+  <div class="max-w-6xl mx-auto px-4 md:px-8 py-10 pb-20">
+    <div class="flex items-start justify-between gap-4 mb-2">
+      <div>
+        <p class="text-[11px] tracking-[.4em] uppercase text-gold/80 mb-2">Knowledge Vault</p>
+        <h2 class="font-serif text-3xl md:text-4xl text-sand">The Living Library</h2>
+      </div>
+      <button class="overlay-close glass-soft rounded-full w-10 h-10 text-sand/70 hover:text-gold text-lg shrink-0" aria-label="Close Knowledge Vault">✕</button>
+    </div>
+    <p class="text-sand/60 text-sm max-w-2xl mb-6">Deep entries on society, religion, astronomy, engineering and discovery — searchable, filterable, and sourced.</p>
+    <div class="flex flex-col md:flex-row gap-3 mb-7">
+      <input id="vault-search" type="search" placeholder="Search the vault… (e.g. 'workers', 'Orion', 'cubit')" aria-label="Search vault entries"
+        class="glass-soft rounded-xl px-4 py-2.5 text-sm w-full md:w-80 placeholder:text-sand/35 focus:border-gold/50 bg-transparent">
+      <div id="vault-chips" class="flex flex-wrap gap-2 items-center" role="group" aria-label="Filter by category"></div>
+    </div>
+    <div id="vault-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </div>
+</section>
+
+<!-- ============ MODAL + LIGHTBOX ============ -->
+<div id="modal" role="dialog" aria-modal="true">
+  <div id="modal-backdrop"></div>
+  <div id="modal-card" class="glass overlay-scroll">
+    <div id="modal-body"></div>
+  </div>
+</div>
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+  <figure class="text-center">
+    <img id="lightbox-img" src="" alt="">
+    <figcaption id="lightbox-cap" class="text-[12px] text-sand/60 mt-3"></figcaption>
+  </figure>
+</div>
+
+<div id="toast" class="glass rounded-full px-5 py-2.5 text-[13px] text-goldlight"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="packs/giza.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   KEMET CODEX — engine + UI (data lives in civilization packs)
+   Sections: PACK · STATE · 3D ENGINE · ERA/VISUAL STATE · TOURS · UI · INIT
+   ===================================================================== */
+
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const IS_MOBILE = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768;
+
+/* ============================ PACK ============================ */
+const PACK = (window.KEMET && window.KEMET.packs[0]) || { eras:[], monuments:[], scenery:[], debates:[], vault:[], vaultCats:[] };
+const ERAS = PACK.eras;
+const MONUMENTS = PACK.monuments;
+const DEBATES = PACK.debates;
+const VAULT = PACK.vault;
+const VAULT_CATS = PACK.vaultCats;
+
+/* ============================ STATE ============================ */
+const state = {
+  era: 2,
+  monument: MONUMENTS.length ? MONUMENTS[0].id : null,
+  view: 'exterior',
+  night: false,
+  family: false,
+  erosion: 'plain',
+  hotspot: null,
+  tab: 'overview',
+  vaultCat: 'all',
+  vaultQuery: '',
+  debate: DEBATES.length ? DEBATES[0].id : null,
+  skyMoment: 'dawn',
+  touring: false,
+  entered: false
+};
+function activeMon(){ return MONUMENTS.find(m => m.id === state.monument) || MONUMENTS[0]; }
+function monOrigin(m){ return (m.threeConfig && m.threeConfig.origin) || [0,0,0]; }
+
+function saveSession(){
+  try { localStorage.setItem('kemet.session', JSON.stringify({ era: state.era, hotspot: state.hotspot, view: state.view, monument: state.monument, family: state.family, visited: true,
+    min: { ctl: document.body.classList.contains('ctl-min'), tl: document.body.classList.contains('tl-min'), panel: document.body.classList.contains('panel-min') } })); } catch(e){}
+}
+function loadSession(){
+  try { return JSON.parse(localStorage.getItem('kemet.session') || 'null'); } catch(e){ return null; }
+}
+function getBookmarks(){ try { return JSON.parse(localStorage.getItem('kemet.bookmarks') || '[]'); } catch(e){ return []; } }
+function setBookmarks(b){ try { localStorage.setItem('kemet.bookmarks', JSON.stringify(b)); } catch(e){} }
+
+/* ============================ 3D ENGINE ============================ */
+
+const PYR_H = 146.6, PYR_B = 115.18; // Khufu height, half-base (metres)
+let scene, camera, renderer, controls, clock;
+let pyramidGroup, coreMats = [], casingMesh, capMesh, ghostMesh, interiorGroup, hotspotGroup, measureGroup, ground;
+let sceneryGroup, sceneryCasings = [], sphinxGroup, sphinxGhost, sandMesh, wallMat;
+let dust, dustBase, stars, skyGroup, skyFadeMats = [], sunSprite, sun, hemi, fill;
+const TEX = {}; // shared procedural textures, built once in initScene
+let webglOK = false;
+let camTween = null;
+let tour = null;
+const hotspotSprites = [];
+const erosionTex = {};
+
+const visCur = { casing:1, cap:1, ghost:0, sand:0, sunInt:1.45, stars:0, dust:.65, sun:null, fog:null, sunPos:null };
+const visTgt = { casing:1, cap:1, ghost:0, sand:0, sunInt:1.45, stars:0, dust:.65, sun:null, fog:null, sunPos:null };
+
+/* ---- procedural material textures (limestone, sand, strata) ---- */
+function scaleUV(geo, su, sv){
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+  return geo;
+}
+function mkTex(c){
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  if (renderer) t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+function speckle(x, w, h, n, dark, light){
+  for (let i = 0; i < n; i++){
+    x.fillStyle = Math.random() > .5 ? dark : light;
+    const s = Math.random() < .85 ? 1.5 : 3;
+    x.fillRect(Math.random() * w, Math.random() * h, s, s);
+  }
+}
+/* Core masonry: one tile = 3 courses of rough-hewn blocks (~4.4 m × 3.3 m world) */
+function blockTexture(){
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const x = c.getContext('2d');
+  x.fillStyle = '#bda273'; x.fillRect(0, 0, 512, 512);
+  const rows = 3, rh = 512 / rows;
+  for (let r = 0; r < rows; r++){
+    let bx = -Math.random() * 60;
+    while (bx < 512){
+      const bw = 90 + Math.random() * 130;
+      const tone = 168 + Math.random() * 46;        // per-block lightness jitter
+      x.fillStyle = `rgb(${tone|0},${(tone * .86)|0},${(tone * .62)|0})`;
+      x.fillRect(bx, r * rh, bw, rh);
+      // subtle top-light / bottom-shade per block for relief
+      let g = x.createLinearGradient(0, r * rh, 0, r * rh + rh);
+      g.addColorStop(0, 'rgba(255,245,220,.13)'); g.addColorStop(.5, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(40,25,10,.2)');
+      x.fillStyle = g; x.fillRect(bx, r * rh, bw, rh);
+      // vertical joint
+      x.fillStyle = 'rgba(45,30,14,.55)'; x.fillRect(bx, r * rh, 3, rh);
+      bx += bw;
+    }
+    // horizontal joint
+    x.fillStyle = 'rgba(45,30,14,.6)'; x.fillRect(0, r * rh, 512, 3);
+  }
+  speckle(x, 512, 512, 2600, 'rgba(80,58,30,.14)', 'rgba(245,230,200,.12)');
+  // weather streaks
+  for (let i = 0; i < 26; i++){
+    const sx = Math.random() * 512;
+    x.fillStyle = 'rgba(70,50,25,.07)';
+    x.fillRect(sx, 0, 4 + Math.random() * 10, 512);
+  }
+  return mkTex(c);
+}
+/* Grayscale joint relief for bump-mapping the masonry */
+function blockBumpTexture(){
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const x = c.getContext('2d');
+  x.fillStyle = '#888'; x.fillRect(0, 0, 512, 512);
+  const rows = 3, rh = 512 / rows;
+  for (let r = 0; r < rows; r++){
+    let bx = -Math.random() * 60;
+    while (bx < 512){
+      const bw = 90 + Math.random() * 130;
+      const tone = 120 + Math.random() * 50;
+      x.fillStyle = `rgb(${tone|0},${tone|0},${tone|0})`;
+      x.fillRect(bx, r * rh, bw, rh);
+      x.fillStyle = '#222'; x.fillRect(bx, r * rh, 4, rh);
+      bx += bw;
+    }
+    x.fillStyle = '#1a1a1a'; x.fillRect(0, r * rh, 512, 4);
+  }
+  speckle(x, 512, 512, 1800, 'rgba(0,0,0,.2)', 'rgba(255,255,255,.16)');
+  return mkTex(c);
+}
+/* Polished Tura casing: near-seamless, faint mottling only */
+function casingTexture(){
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d');
+  x.fillStyle = '#f3ead7'; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 36; i++){
+    const g = x.createRadialGradient(Math.random()*256, Math.random()*256, 2, Math.random()*256, Math.random()*256, 30 + Math.random()*60);
+    g.addColorStop(0, `rgba(${Math.random()>.5?'226,210,178':'255,250,238'},.06)`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  }
+  speckle(x, 256, 256, 380, 'rgba(150,128,95,.05)', 'rgba(255,252,242,.06)');
+  return mkTex(c);
+}
+/* Desert sand: wind ripples + grain (color + matching bump) */
+function sandTextures(){
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const x = c.getContext('2d');
+  const b = document.createElement('canvas'); b.width = b.height = 512;
+  const y = b.getContext('2d');
+  x.fillStyle = '#c9ac7d'; x.fillRect(0, 0, 512, 512);
+  y.fillStyle = '#808080'; y.fillRect(0, 0, 512, 512);
+  // soft tonal patches
+  for (let i = 0; i < 22; i++){
+    const g = x.createRadialGradient(Math.random()*512, Math.random()*512, 4, Math.random()*512, Math.random()*512, 60 + Math.random()*150);
+    g.addColorStop(0, Math.random() > .5 ? 'rgba(176,140,94,.10)' : 'rgba(238,218,178,.10)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 512, 512);
+  }
+  // wind ripples — wavy near-horizontal bands (≈2 m wavelength in world space)
+  for (let row = 0; row < 26; row++){
+    const yy0 = row * 20 + Math.random() * 8;
+    const amp = 3 + Math.random() * 5, ph = Math.random() * 9;
+    x.strokeStyle = 'rgba(120,92,56,.16)'; x.lineWidth = 2.5 + Math.random() * 3;
+    y.strokeStyle = 'rgba(40,40,40,.5)';   y.lineWidth = x.lineWidth;
+    x.beginPath(); y.beginPath();
+    for (let xx = -10; xx <= 522; xx += 14){
+      const yy = yy0 + Math.sin(xx * .03 + ph) * amp;
+      if (xx === -10){ x.moveTo(xx, yy); y.moveTo(xx, yy); } else { x.lineTo(xx, yy); y.lineTo(xx, yy); }
+    }
+    x.stroke(); y.stroke();
+    // bright crest just above each shadow line
+    x.strokeStyle = 'rgba(244,228,196,.13)'; x.beginPath();
+    y.strokeStyle = 'rgba(220,220,220,.45)'; y.beginPath();
+    for (let xx = -10; xx <= 522; xx += 14){
+      const yy = yy0 - 4 + Math.sin(xx * .03 + ph) * amp;
+      if (xx === -10){ x.moveTo(xx, yy); y.moveTo(xx, yy); } else { x.lineTo(xx, yy); y.lineTo(xx, yy); }
+    }
+    x.stroke(); y.stroke();
+  }
+  speckle(x, 512, 512, 5200, 'rgba(110,84,52,.09)', 'rgba(248,236,210,.09)');
+  speckle(y, 512, 512, 3200, 'rgba(0,0,0,.22)', 'rgba(255,255,255,.2)');
+  return { map: mkTex(c), bump: mkTex(b) };
+}
+function buildTextures(){
+  TEX.block = blockTexture();
+  TEX.blockBump = blockBumpTexture();
+  TEX.casing = casingTexture();
+  const sand = sandTextures();
+  TEX.sand = sand.map; TEX.sandBump = sand.bump;
+  TEX.sand.repeat.set(110, 110); TEX.sandBump.repeat.set(110, 110);
+  TEX.strata = strataTexture();
+}
+
+function initScene(){
+  const canvas = document.getElementById('scene-canvas');
+  if (typeof THREE === 'undefined') return webglFail();
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, alpha: true });
+  } catch(e){ return webglFail(); }
+  webglOK = true;
+
+  visCur.sun = new THREE.Color('#ffd9a8'); visTgt.sun = new THREE.Color('#ffd9a8');
+  visCur.fog = new THREE.Color('#b07a45'); visTgt.fog = new THREE.Color('#b07a45');
+  visCur.sunPos = new THREE.Vector3(340,150,-200); visTgt.sunPos = visCur.sunPos.clone();
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = !IS_MOBILE;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xb07a45, 900, 3800);
+
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 8000);
+  camera.position.set(430, 200, 430);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 55, 0);
+  controls.enableDamping = true; controls.dampingFactor = .06;
+  controls.minDistance = 40; controls.maxDistance = 1800;
+  controls.maxPolarAngle = Math.PI * .52;
+  controls.autoRotate = !REDUCED; controls.autoRotateSpeed = .4;
+  controls.addEventListener('start', () => { camTween = null; });
+
+  buildTextures();
+  buildLights(); buildGround(); buildKhufu(); buildInterior(); buildScenery(); buildSphinx();
+  buildHotspots(); buildMeasures(); buildAtmosphere();
+  setupPicking(canvas);
+  window.addEventListener('resize', onResize);
+
+  clock = new THREE.Clock();
+  renderer.setAnimationLoop(animate);
+}
+
+function webglFail(){
+  const fb = document.getElementById('webgl-fallback');
+  fb.classList.remove('hidden'); fb.classList.add('flex');
+  document.getElementById('scene-canvas').style.display = 'none';
+}
+
+function buildLights(){
+  hemi = new THREE.HemisphereLight(0xbcc7e6, 0x6b5435, .5);
+  scene.add(hemi);
+  sun = new THREE.DirectionalLight(0xffd9a8, 1.45);
+  sun.position.copy(visCur.sunPos);
+  if (!IS_MOBILE){
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -850; sun.shadow.camera.right = 850;
+    sun.shadow.camera.top = 850; sun.shadow.camera.bottom = -850;
+    sun.shadow.camera.far = 2600; sun.shadow.bias = -0.0006;
+  }
+  scene.add(sun);
+  fill = new THREE.DirectionalLight(0x8fa3c9, .25);
+  fill.position.set(-300, 120, 250);
+  scene.add(fill);
+}
+
+/* ---- dune terrain: value-noise heightfield, flattened over the monuments ---- */
+function hash2(x, z){ const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); }
+function vnoise(x, z){
+  const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi;
+  const u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+  const a = hash2(xi, zi), b = hash2(xi + 1, zi), c = hash2(xi, zi + 1), d = hash2(xi + 1, zi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function fbm(x, z){
+  return vnoise(x, z) * .6 + vnoise(x * 2.7 + 13, z * 2.7 + 7) * .28 + vnoise(x * 6.1 + 41, z * 6.1 + 89) * .12;
+}
+// Flat anchors: keep the archaeological zone level (monuments, temples, causeways)
+const FLAT_ZONES = [
+  [0, 0, 480], [-334, 354, 430], [-610, 739, 380], [345, 430, 270],
+  [400, -60, 320], [90, 410, 200], [-380, 745, 220], [-628, 838, 180], [220, 60, 220], [-210, -20, 240]
+];
+function duneMask(x, z){
+  let d = 1e9;
+  for (let i = 0; i < FLAT_ZONES.length; i++){
+    const f = FLAT_ZONES[i];
+    const dd = Math.hypot(x - f[0], z - f[1]) - f[2];
+    if (dd < d) d = dd;
+  }
+  const t = Math.min(1, Math.max(0, d / 320));
+  return t * t * (3 - 2 * t);
+}
+function buildGround(){
+  const seg = IS_MOBILE ? 100 : 170;
+  const geo = new THREE.PlaneGeometry(7200, 7200, seg, seg);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++){
+    const x = pos.getX(i), z = pos.getZ(i);
+    const m = duneMask(x, z);
+    const dune = (fbm(x * .0042, z * .0042) - .5) * 2;       // ±1, ~240 m features
+    const micro = (fbm(x * .021 + 99, z * .021 + 31) - .5);  // small hummocks
+    pos.setY(i, dune * 9.5 * m + micro * 1.6 * m);
+    // vertex tint: crests catch light, hollows hold shadow, plus broad patchiness
+    const patch = (fbm(x * .0011 + 7, z * .0011 + 57) - .5) * .16;
+    let shade = .88 + dune * m * .085 + patch;
+    shade = Math.min(1.06, Math.max(.66, shade));
+    colors[i * 3] = shade; colors[i * 3 + 1] = shade * .985; colors[i * 3 + 2] = shade * .955;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xf7eeda, roughness: 1, metalness: 0, vertexColors: true,
+    map: TEX.sand, bumpMap: TEX.sandBump, bumpScale: .55
+  });
+  ground = new THREE.Mesh(geo, mat);
+  ground.receiveShadow = !IS_MOBILE;
+  scene.add(ground);
+}
+
+/* ---- Stepped masonry core shared by every pyramid on the plateau ---- */
+function makeCoreMats(){
+  // limestone tint variation; all share one masonry texture + bump
+  return [0xfdf2dd, 0xf2e3c8, 0xfff8e8, 0xf7ead2].map(c => new THREE.MeshStandardMaterial({
+    color: c, roughness: .94, metalness: 0, map: TEX.block, bumpMap: TEX.blockBump, bumpScale: .4 }));
+}
+let graniteMat = null;
+function makeSteppedCore(height, halfBase, courses, mats, graniteBase){
+  if (!graniteMat) graniteMat = new THREE.MeshStandardMaterial({
+    color: 0xcf9a85, roughness: .85, map: TEX.block, bumpMap: TEX.blockBump, bumpScale: .35 });
+  const g = new THREE.Group();
+  const n = IS_MOBILE ? Math.max(8, Math.round(courses * .55)) : courses;
+  const shadows = !IS_MOBILE;
+  for (let i = 0; i < n; i++){
+    const ch = height / n;
+    const half = halfBase * (1 - (i + .5) / n);
+    const geo = new THREE.BoxGeometry(half * 2, ch, half * 2);
+    scaleUV(geo, (half * 2) / 4.4, Math.max(.34, ch / 3.3));
+    // Menkaure's lower courses were cased in pink Aswan granite
+    const mat = (graniteBase && i < n * .25) ? graniteMat : mats[i % mats.length];
+    const m = new THREE.Mesh(geo, mat);
+    m.position.y = i * ch + ch / 2;
+    m.castShadow = m.receiveShadow = shadows;
+    g.add(m);
+  }
+  return g;
+}
+function makeCasing(height, halfBase, courses){
+  // margin grows for coarse cores so the steps never poke through the smooth faces
+  const n = IS_MOBILE ? Math.max(8, Math.round((courses || 46) * .55)) : (courses || 46);
+  const k = 1.013 + .62 / n;
+  const casGeo = new THREE.ConeGeometry(halfBase * Math.SQRT2 * k, height * 1.012, 4, 1);
+  casGeo.rotateY(Math.PI / 4);
+  const slant = Math.hypot(height, halfBase);
+  scaleUV(casGeo, Math.max(6, halfBase / 9), Math.max(4, slant / 16));
+  const casMat = new THREE.MeshStandardMaterial({
+    color: 0xf5edda, roughness: .32, metalness: .04, transparent: true, opacity: 1,
+    map: TEX.casing });
+  const mesh = new THREE.Mesh(casGeo, casMat);
+  mesh.position.y = height * 1.012 / 2;
+  mesh.castShadow = !IS_MOBILE;
+  return mesh;
+}
+
+/* ---- Khufu: stepped core + casing + capstone (procedural; swap for
+        GLTF via monument.threeConfig.gltfUrl when a model is sourced) ---- */
+function buildKhufu(){
+  pyramidGroup = new THREE.Group();
+
+  coreMats = makeCoreMats();
+  pyramidGroup.add(makeSteppedCore(PYR_H, PYR_B, 46, coreMats));
+
+  casingMesh = makeCasing(PYR_H, PYR_B);
+  const casGeo = casingMesh.geometry;
+  pyramidGroup.add(casingMesh);
+
+  const capH = PYR_H * .07;
+  const capGeo = new THREE.ConeGeometry(PYR_B * Math.SQRT2 * .07, capH, 4, 1);
+  capGeo.rotateY(Math.PI / 4);
+  const capMat = new THREE.MeshStandardMaterial({ color: 0xe6c277, roughness: .25, metalness: .85, emissive: 0x553d12, transparent: true, opacity: 1 });
+  capMesh = new THREE.Mesh(capGeo, capMat);
+  capMesh.position.y = PYR_H * 1.012 - capH / 2 + .5;
+  pyramidGroup.add(capMesh);
+
+  const ghostGeo = new THREE.EdgesGeometry(casGeo);
+  const ghostMat = new THREE.LineBasicMaterial({ color: 0xC9A86C, transparent: true, opacity: 0 });
+  ghostMesh = new THREE.LineSegments(ghostGeo, ghostMat);
+  ghostMesh.position.copy(casingMesh.position);
+  scene.add(ghostMesh);
+
+  scene.add(pyramidGroup);
+}
+
+function buildInterior(){
+  interiorGroup = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0xd8b88a, roughness: .6, emissive: 0x9a7434, emissiveIntensity: .5 });
+  const granite = new THREE.MeshStandardMaterial({ color: 0xb07a6a, roughness: .55, emissive: 0x7a4434, emissiveIntensity: .45 });
+  function box(w, h, d, x, y, z, rx, m){
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m || mat);
+    mesh.position.set(x, y, z);
+    if (rx) mesh.rotation.x = rx;
+    interiorGroup.add(mesh);
+    return mesh;
+  }
+  box(10.5, 5.9, 5.3, 6, 46, 8, 0, granite);            // King's Chamber
+  box(5.8, 6.2, 5.3, 0, 24, 2);                          // Queen's Chamber
+  box(14, 4.5, 8.2, 0, -24, 0);                          // Subterranean Chamber
+  box(2.4, 8.7, 46.7, 0, 34, -16, -0.4587);              // Grand Gallery
+  box(1.4, 1.4, 122, 0, -3.5, -57, 0.357);               // Descending passage
+  box(1.4, 1.4, 64, 0, 14, -64, -0.38);                  // Ascending passage
+  box(1.4, 1.4, 34, 0, 21, -15, 0);                      // Horizontal passage
+  interiorGroup.visible = false;
+  scene.add(interiorGroup);
+}
+
+/* ---- Plateau scenery: Khafre, Menkaure, queens' pyramids, temples,
+        causeways, cemetery fields, boat pits — positions per survey data ---- */
+function buildScenery(){
+  sceneryGroup = new THREE.Group();
+  sceneryCasings = [];
+  const shadows = !IS_MOBILE;
+  const ruinMat = new THREE.MeshStandardMaterial({ color: 0xeddcb6, roughness: .96, map: TEX.block, bumpMap: TEX.blockBump, bumpScale: .3 });
+  const mastabaMat = new THREE.MeshStandardMaterial({ color: 0xe5d2ab, roughness: .97, map: TEX.block });
+  const sceneMats = makeCoreMats();
+  (PACK.scenery || []).forEach(cfg => {
+    if (cfg.type === 'pyramid'){
+      const g = new THREE.Group();
+      g.add(makeSteppedCore(cfg.height, cfg.halfBase, cfg.courses || 24, sceneMats, cfg.graniteBase));
+      const cas = makeCasing(cfg.height, cfg.halfBase, cfg.courses || 24);
+      g.add(cas);
+      sceneryCasings.push(cas.material);
+      if (cfg.tip){ // Khafre keeps its summit casing to this day
+        const th = cfg.height * .24;
+        const tipGeo = new THREE.ConeGeometry(cfg.halfBase * Math.SQRT2 * .245, th, 4, 1).rotateY(Math.PI / 4);
+        scaleUV(tipGeo, 5, 4);
+        const tip = new THREE.Mesh(tipGeo,
+          new THREE.MeshStandardMaterial({ color: 0xece1c8, roughness: .38, map: TEX.casing }));
+        tip.position.y = cfg.height - th / 2 + .3;
+        tip.castShadow = shadows;
+        g.add(tip);
+      }
+      g.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
+      sceneryGroup.add(g);
+    } else if (cfg.type === 'pit'){
+      const pit = new THREE.Mesh(
+        new THREE.BoxGeometry(cfg.size[0], cfg.size[1], cfg.size[2]),
+        new THREE.MeshStandardMaterial({ color: 0x55462f, roughness: 1 }));
+      pit.position.set(cfg.pos[0], cfg.size[1] / 2 - .25, cfg.pos[2]);
+      sceneryGroup.add(pit);
+    } else if (cfg.type === 'ruin'){ // mortuary / valley / Sphinx temples (ruined footprint)
+      const geo = new THREE.BoxGeometry(cfg.size[0], cfg.size[1], cfg.size[2]);
+      scaleUV(geo, cfg.size[0] / 4.4, Math.max(.4, cfg.size[1] / 3.3));
+      const t = new THREE.Mesh(geo, ruinMat);
+      t.position.set(cfg.pos[0], cfg.size[1] / 2, cfg.pos[2]);
+      t.castShadow = t.receiveShadow = shadows;
+      sceneryGroup.add(t);
+    } else if (cfg.type === 'causeway'){ // processional ramp between temples
+      const dx = cfg.to[0] - cfg.from[0], dz = cfg.to[2] - cfg.from[2];
+      const len = Math.hypot(dx, dz);
+      const geo = new THREE.BoxGeometry(len, 1.6, cfg.width || 9);
+      scaleUV(geo, len / 4.4, 1);
+      const cw = new THREE.Mesh(geo, ruinMat);
+      cw.position.set((cfg.from[0] + cfg.to[0]) / 2, .8, (cfg.from[2] + cfg.to[2]) / 2);
+      cw.rotation.y = -Math.atan2(dz, dx);
+      cw.receiveShadow = shadows;
+      sceneryGroup.add(cw);
+    } else if (cfg.type === 'mastabas'){ // cemetery field — grid of low tombs
+      const rows = cfg.rows || 3, cols = cfg.cols || 4;
+      for (let r = 0; r < rows; r++){
+        for (let c = 0; c < cols; c++){
+          const w = cfg.cell[0] * (0.8 + hash2(r * 7 + c, c) * .4);
+          const h = cfg.cell[1] * (0.75 + hash2(r, c * 3) * .5);
+          const d = cfg.cell[2] * (0.8 + hash2(r + 9, c + 4) * .4);
+          const geo = new THREE.BoxGeometry(w, h, d);
+          scaleUV(geo, w / 4.4, Math.max(.4, h / 3.3));
+          const m = new THREE.Mesh(geo, mastabaMat);
+          m.position.set(
+            cfg.pos[0] + c * (cfg.cell[0] + cfg.gap[0]) + (hash2(c, r + 2) - .5) * 4,
+            h / 2,
+            cfg.pos[2] + r * (cfg.cell[2] + cfg.gap[1]) + (hash2(c + 5, r) - .5) * 4);
+          m.castShadow = m.receiveShadow = shadows;
+          sceneryGroup.add(m);
+        }
+      }
+    }
+  });
+  scene.add(sceneryGroup);
+}
+
+/* ---- Sphinx: stylized bedrock lion + enclosure with Erosion Lab walls ---- */
+function strataTexture(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const x = c.getContext('2d');
+  x.fillStyle = '#c2a779'; x.fillRect(0, 0, 256, 256);
+  let y = 0;
+  const tones = ['#b89d72', '#ccb287', '#aa8d60', '#c4ab7e'];
+  let i = 0;
+  while (y < 256){
+    const h = 12 + Math.random() * 18;
+    x.fillStyle = tones[i++ % 4]; x.globalAlpha = .55;
+    x.fillRect(0, y, 256, h);
+    x.globalAlpha = .25; x.fillStyle = '#6e5436';
+    x.fillRect(0, y + h - 1, 256, 1.5);
+    y += h;
+  }
+  x.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+function makeErosionTexture(mode){
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const x = c.getContext('2d');
+  x.fillStyle = '#c4a979'; x.fillRect(0, 0, 512, 256);
+  // speckle
+  for (let i = 0; i < 900; i++){
+    x.fillStyle = Math.random() > .5 ? 'rgba(110,84,54,.12)' : 'rgba(240,228,200,.1)';
+    x.fillRect(Math.random() * 512, Math.random() * 256, 2, 2);
+  }
+  if (mode === 'wind' || mode === 'plain'){
+    let y = 0;
+    while (y < 256){
+      const h = 10 + Math.random() * 22;
+      x.globalAlpha = mode === 'wind' ? .5 : .16;
+      x.fillStyle = ['#a8895f', '#ccb287', '#b89d72'][Math.floor(Math.random() * 3)];
+      x.fillRect(0, y, 512, h);
+      x.globalAlpha = mode === 'wind' ? .45 : .14;
+      x.fillStyle = '#6e5436'; x.fillRect(0, y + h - 1.5, 512, 2);
+      y += h;
+    }
+  }
+  if (mode === 'rain'){
+    x.lineCap = 'round';
+    for (let i = 0; i < 30; i++){
+      const x0 = Math.random() * 512;
+      x.strokeStyle = 'rgba(86,64,38,.32)';
+      x.lineWidth = 5 + Math.random() * 11;
+      x.beginPath();
+      x.moveTo(x0, -10);
+      for (let yy = 0; yy <= 266; yy += 16){
+        x.lineTo(x0 + Math.sin(yy * .045 + i * 1.7) * 9, yy);
+      }
+      x.stroke();
+    }
+    // soft rounded top edge
+    const g = x.createLinearGradient(0, 0, 0, 60);
+    g.addColorStop(0, 'rgba(90,68,40,.35)'); g.addColorStop(1, 'rgba(90,68,40,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 512, 60);
+  }
+  x.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(2, 1);
+  return t;
+}
+
+function buildSphinx(){
+  const mon = MONUMENTS.find(m => m.threeConfig && m.threeConfig.model === 'sphinx');
+  if (!mon) return;
+  const o = monOrigin(mon);
+  sphinxGroup = new THREE.Group();
+  sphinxGroup.position.set(o[0], o[1], o[2]);
+
+  // Bedrock body (banded strata of Members I–III), smoother Member III head,
+  // and squared repair masonry on the forelegs — like the real restorations.
+  const bodyMat = new THREE.MeshStandardMaterial({ map: TEX.strata, color: 0xdcc69d, roughness: .96, bumpMap: TEX.strata, bumpScale: .3 });
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xc9ad7d, roughness: .88, map: TEX.casing });
+  const repairMat = new THREE.MeshStandardMaterial({ color: 0xe2cda3, roughness: .95, map: TEX.block, bumpMap: TEX.blockBump, bumpScale: .25 });
+  const shadows = !IS_MOBILE;
+  const segs = IS_MOBILE ? 18 : 28;
+
+  function blob(sx, sy, sz, x, y, z, m){ // smooth sculpted mass
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, segs, Math.round(segs * .7)), m || bodyMat);
+    mesh.scale.set(sx, sy, sz);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = mesh.receiveShadow = shadows;
+    sphinxGroup.add(mesh);
+    return mesh;
+  }
+  function slab(w, h, d, x, y, z, m){ // squared masonry
+    const geo = new THREE.BoxGeometry(w, h, d);
+    scaleUV(geo, w / 3, Math.max(.4, h / 3));
+    const mesh = new THREE.Mesh(geo, m || bodyMat);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = mesh.receiveShadow = shadows;
+    sphinxGroup.add(mesh);
+    return mesh;
+  }
+
+  /* Body — 73.5 m nose-to-tail, back ~12.5 m, head crown 20.2 m */
+  blob(21, 5.6, 7.6,  -7, 7.0, 0);            // torso
+  blob(9.5, 6.0, 7.2,  2, 7.6, 0);            // shoulder swell
+  blob(10, 7.4, 9.2, -26, 6.8, 0);            // haunches
+  blob(7.5, 3.2, 3.0, -24, 3.0, 7.9);         // folded hind leg L
+  blob(7.5, 3.2, 3.0, -24, 3.0, -7.9);        // folded hind leg R
+  blob(6, 1.4, 1.3, -33.5, 1.9, 7.4);         // tail curling round the right haunch
+  blob(7, 7.8, 7.0,  11, 7.8, 0);             // chest rising to the neck
+  slab(22, 4.4, 4.4, 22, 2.2,  5.9, repairMat);  // foreleg L (repair masonry)
+  slab(22, 4.4, 4.4, 22, 2.2, -5.9, repairMat);  // foreleg R
+  blob(3.8, 2.2, 2.6, 33, 1.5,  5.9, repairMat); // paw L
+  blob(3.8, 2.2, 2.6, 33, 1.5, -5.9, repairMat); // paw R
+
+  /* Head — neck, skull, flat face plane, nemes headdress */
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(2.9, 3.5, 5.4, segs), headMat);
+  neck.position.set(18.5, 13, 0); neck.castShadow = neck.receiveShadow = shadows;
+  sphinxGroup.add(neck);
+  blob(3.5, 3.4, 3.2, 21.5, 16.8, 0, headMat);   // skull — crown at 20.2 m
+  blob(1.7, 2.9, 2.6, 24.0, 16.4, 0, headMat);   // face
+  blob(.5, .9, .8, 25.6, 16.2, 0, headMat);      // nose ridge (broken stump)
+  blob(4.15, 3.2, 4.5, 20.7, 16.6, 0, headMat);  // nemes crown dome
+  const flapL = slab(4.6, 6.6, 1.5, 20.9, 12.9,  4.3, headMat); flapL.rotation.x = -.2; flapL.rotation.y = .08;
+  const flapR = slab(4.6, 6.6, 1.5, 20.9, 12.9, -4.3, headMat); flapR.rotation.x =  .2; flapR.rotation.y = -.08;
+  const lappet = slab(2.6, 4.6, 2.4, 17.6, 13.6, 0, headMat); lappet.rotation.z = .18; // back queue
+  slab(.9, 4.2, 3, 30, 2.1, 0,                   // Dream Stele between the paws
+    new THREE.MeshStandardMaterial({ color: 0x9a6a58, roughness: .6 }));
+
+  // Enclosure pit + walls (Erosion Lab surface)
+  erosionTex.plain = makeErosionTexture('plain');
+  erosionTex.rain = makeErosionTexture('rain');
+  erosionTex.wind = makeErosionTexture('wind');
+  wallMat = new THREE.MeshStandardMaterial({ map: erosionTex.plain, color: 0xd6bd92, roughness: .98 });
+  const floorTex = TEX.sand.clone(); floorTex.needsUpdate = true; floorTex.repeat.set(1, 1);
+  const floor = slab(112, .4, 58, -2, .2, 0,
+    new THREE.MeshStandardMaterial({ color: 0xe0c89e, roughness: 1, map: floorTex }));
+  floor.castShadow = false;
+  slab(104, 7, 4, -4, 3.5, -27, wallMat);       // north wall
+  slab(104, 7, 4, -4, 3.5, 27, wallMat);        // south wall
+  slab(4, 8, 50, -55, 4, 0, wallMat);           // west wall
+
+  // Sand burial mound (scaled per era)
+  const moundTex = TEX.sand.clone(); moundTex.needsUpdate = true; moundTex.repeat.set(8, 4);
+  sandMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16),
+    new THREE.MeshStandardMaterial({ color: 0xf2e0bd, roughness: 1, map: moundTex }));
+  sandMesh.position.set(-2, 0, 0);
+  sandMesh.scale.set(46, .01, 17);
+  sandMesh.receiveShadow = shadows;
+  sphinxGroup.add(sandMesh);
+
+  // Ghost outline for the pre-carving (or older-carving?) eras
+  sphinxGhost = new THREE.Group();
+  const gm = new THREE.LineBasicMaterial({ color: 0xC9A86C, transparent: true, opacity: 0 });
+  [[68, 13, 18, -4, 6.5, 0], [7.5, 7, 7, 21.5, 16.5, 0]].forEach(b => {
+    const l = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(b[0], b[1], b[2])), gm);
+    l.position.set(b[3], b[4], b[5]);
+    sphinxGhost.add(l);
+  });
+  sphinxGhost.position.copy(sphinxGroup.position);
+  scene.add(sphinxGhost);
+  scene.add(sphinxGroup);
+}
+
+function applyErosion(mode){
+  state.erosion = mode;
+  if (wallMat){ wallMat.map = erosionTex[mode]; wallMat.needsUpdate = true; }
+  document.querySelectorAll('[data-erosion]').forEach(b => b.classList.toggle('active', b.dataset.erosion === mode));
+  const msg = {
+    rain: "Schoch's reading — rounded vertical runoff channels: the signature of millennia of heavy rain?",
+    wind: "Consensus reading — salt crystallization and wind cut the soft layers into horizontal bands.",
+    plain: "Neutral surface — judge the enclosure for yourself."
+  };
+  showToast(msg[mode] || '');
+}
+
+/* ---- Hotspots (all monuments; visibility filtered) ---- */
+function glowTexture(hex, ring){
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(64, 64, 4, 64, 64, 60);
+  g.addColorStop(0, 'rgba(255,250,235,1)');
+  g.addColorStop(.25, hex + 'ee');
+  g.addColorStop(.55, hex + '55');
+  g.addColorStop(1, hex + '00');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128);
+  if (ring !== false){
+    ctx.strokeStyle = hex; ctx.lineWidth = 3; ctx.globalAlpha = .9;
+    ctx.beginPath(); ctx.arc(64, 64, 26, 0, Math.PI * 2); ctx.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+function buildHotspots(){
+  hotspotGroup = new THREE.Group();
+  const tex = glowTexture('#C9A86C');
+  MONUMENTS.forEach(mon => {
+    const o = monOrigin(mon);
+    (mon.hotspots || []).forEach(h => {
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+      const s = new THREE.Sprite(mat);
+      s.position.set(h.pos[0] + o[0], h.pos[1] + o[1], h.pos[2] + o[2]);
+      s.scale.set(13, 13, 1);
+      s.renderOrder = 999;
+      s.userData.id = h.id;
+      s.userData.mon = mon.id;
+      hotspotGroup.add(s);
+      hotspotSprites.push(s);
+    });
+  });
+  scene.add(hotspotGroup);
+}
+function refreshHotspots(){
+  if (!webglOK) return;
+  const eraOK = ERAS[state.era].visual.pyramid;
+  hotspotSprites.forEach(s => { s.visible = !!eraOK && s.userData.mon === state.monument; });
+}
+
+/* ---- Measurement overlays ---- */
+function textSprite(text){
+  const pad = 14, fs = 26;
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  ctx.font = `600 ${fs}px Inter, sans-serif`;
+  const w = Math.ceil(ctx.measureText(text).width) + pad * 2;
+  c.width = w; c.height = fs + pad * 1.6;
+  const x = c.getContext('2d');
+  x.fillStyle = 'rgba(11,19,43,.85)';
+  x.strokeStyle = 'rgba(201,168,108,.7)';
+  x.lineWidth = 2;
+  roundRect(x, 1, 1, c.width - 2, c.height - 2, 10); x.fill(); x.stroke();
+  x.font = `600 ${fs}px Inter, sans-serif`;
+  x.fillStyle = '#E2C893';
+  x.textBaseline = 'middle';
+  x.fillText(text, pad, c.height / 2 + 1);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+  const sc = .55;
+  s.scale.set(c.width * sc, c.height * sc, 1);
+  s.renderOrder = 1000;
+  return s;
+}
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function mkLine(points, color, dashed){
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  const mat = dashed
+    ? new THREE.LineDashedMaterial({ color, dashSize: 6, gapSize: 4, transparent: true, opacity: .95 })
+    : new THREE.LineBasicMaterial({ color, transparent: true, opacity: .95 });
+  const line = new THREE.Line(geo, mat);
+  if (dashed) line.computeLineDistances();
+  line.renderOrder = 998;
+  mat.depthTest = false;
+  return line;
+}
+
+const measureSets = {};
+function buildMeasures(){
+  measureGroup = new THREE.Group();
+  const gold = 0xE2C893;
+  const v = (x,y,z) => new THREE.Vector3(x,y,z);
+
+  // Great Pyramid
+  const gBase = new THREE.Group();
+  gBase.add(mkLine([v(-PYR_B,2,PYR_B+18), v(PYR_B,2,PYR_B+18)], gold));
+  gBase.add(mkLine([v(-PYR_B,2,PYR_B+10), v(-PYR_B,2,PYR_B+26)], gold));
+  gBase.add(mkLine([v(PYR_B,2,PYR_B+10), v(PYR_B,2,PYR_B+26)], gold));
+  const lb = textSprite('230.36 m · 440 cubits'); lb.position.set(0, 16, PYR_B + 34); gBase.add(lb);
+  gBase.visible = false; measureGroup.add(gBase); measureSets['gp-base'] = gBase;
+
+  const gH = new THREE.Group();
+  gH.add(mkLine([v(PYR_B+26,0,0), v(PYR_B+26,PYR_H,0)], gold, true));
+  gH.add(mkLine([v(0,PYR_H,0), v(PYR_B+26,PYR_H,0)], gold, true));
+  const lh = textSprite('146.59 m · 280 cubits (orig.)'); lh.position.set(PYR_B + 36, PYR_H / 2, 0); gH.add(lh);
+  gH.visible = false; measureGroup.add(gH); measureSets['gp-height'] = gH;
+
+  const gS = new THREE.Group();
+  const basePt = v(0, 1.5, PYR_B);
+  gS.add(mkLine([basePt, v(0, 1.5, PYR_B + 52)], gold));
+  const dir = v(0, PYR_H, -PYR_B).normalize().multiplyScalar(64);
+  gS.add(mkLine([basePt, basePt.clone().add(dir)], gold));
+  const ls = textSprite("51° 50′ — seked 5½"); ls.position.set(0, 26, PYR_B + 44); gS.add(ls);
+  gS.visible = false; measureGroup.add(gS); measureSets['gp-slope'] = gS;
+
+  // Sphinx
+  const sxMon = MONUMENTS.find(m => m.id === 'sphinx');
+  if (sxMon){
+    const o = monOrigin(sxMon);
+    const sL = new THREE.Group();
+    sL.add(mkLine([v(o[0]-36.8,2,o[2]+34), v(o[0]+36.8,2,o[2]+34)], gold));
+    sL.add(mkLine([v(o[0]-36.8,2,o[2]+28), v(o[0]-36.8,2,o[2]+40)], gold));
+    sL.add(mkLine([v(o[0]+36.8,2,o[2]+28), v(o[0]+36.8,2,o[2]+40)], gold));
+    const ll = textSprite('73.5 m — paws to tail'); ll.position.set(o[0], 12, o[2]+42); sL.add(ll);
+    sL.visible = false; measureGroup.add(sL); measureSets['sx-length'] = sL;
+
+    const sH = new THREE.Group();
+    sH.add(mkLine([v(o[0]+50,0,o[2]), v(o[0]+50,20.2,o[2])], gold, true));
+    sH.add(mkLine([v(o[0]+24,20.2,o[2]), v(o[0]+50,20.2,o[2])], gold, true));
+    const lhh = textSprite('20.2 m'); lhh.position.set(o[0]+58, 11, o[2]); sH.add(lhh);
+    sH.visible = false; measureGroup.add(sH); measureSets['sx-height'] = sH;
+  }
+  scene.add(measureGroup);
+}
+
+let activeMeasure = null;
+function showMeasure(key){
+  Object.keys(measureSets).forEach(k => measureSets[k].visible = false);
+  if (key && measureSets[key] && activeMeasure !== key){
+    measureSets[key].visible = true;
+    activeMeasure = key;
+  } else {
+    activeMeasure = null;
+  }
+  document.querySelectorAll('[data-measure]').forEach(b => {
+    b.classList.toggle('active', b.dataset.measure === activeMeasure);
+  });
+}
+
+/* ---- Atmosphere: dust, faint background stars, sun disc ---- */
+function buildAtmosphere(){
+  const N = IS_MOBILE ? 220 : 520;
+  dustBase = new Float32Array(N * 3);
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++){
+    dustBase[i*3]   = pos[i*3]   = (Math.random() - .5) * 1100;
+    dustBase[i*3+1] = pos[i*3+1] = Math.random() * 220 + 2;
+    dustBase[i*3+2] = pos[i*3+2] = (Math.random() - .5) * 1100;
+  }
+  const dg = new THREE.BufferGeometry();
+  dg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0xe8d2a4, size: 3, map: glowTexture('#f5e6c4', false), transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(dust);
+
+  // faint filler stars behind the real catalog
+  const SN = 1200;
+  const sp = new Float32Array(SN * 3);
+  for (let i = 0; i < SN; i++){
+    const th = Math.random() * Math.PI * 2, ph = Math.acos(Math.random() * .96);
+    const r = 2750;
+    sp[i*3] = r * Math.sin(ph) * Math.cos(th);
+    sp[i*3+1] = r * Math.cos(ph) + 20;
+    sp[i*3+2] = r * Math.sin(ph) * Math.sin(th);
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  const sm = new THREE.PointsMaterial({ color: 0xb9c6e4, size: 4.5, transparent: true, opacity: 0, depthWrite: false });
+  sm.fog = false;
+  stars = new THREE.Points(sg, sm);
+  scene.add(stars);
+
+  // sun disc + glow (positioned each frame from the light direction)
+  const sunMat = new THREE.SpriteMaterial({ map: glowTexture('#ffe9b8', false), transparent: true, depthTest: false, opacity: .95 });
+  sunMat.fog = false;
+  sunSprite = new THREE.Sprite(sunMat);
+  sunSprite.scale.set(420, 420, 1);
+  sunSprite.renderOrder = 1;
+  scene.add(sunSprite);
+
+  // real-sky group: rebuilt by updateSky() whenever era / moment / night change
+  skyGroup = new THREE.Group();
+  skyGroup.visible = false;
+  scene.add(skyGroup);
+}
+
+/* ============================ REAL SKY ============================
+   A bright-star catalog (J2000) precessed to each era, so the night sky
+   over the plateau is the sky those builders actually saw. Scene frame:
+   +X = east, −Z = north, matching the monuments' cardinal alignment. */
+const D2R = Math.PI / 180;
+const SKY_R = 3300; // beyond most of the desert plane so horizon stars don't sit on the sand
+const SITE_LAT = (((PACK.site && PACK.site.lat) || 29.979)) * D2R;
+
+/* [name, RA (hours, J2000), Dec (°, J2000), magnitude, constellation] */
+const STARS = [
+  ['Sirius',6.752,-16.72,-1.46,'CMa'],['Mirzam',6.378,-17.96,1.98,'CMa'],['Adhara',6.977,-28.97,1.50,'CMa'],
+  ['Wezen',7.140,-26.39,1.83,'CMa'],['Aludra',7.401,-29.30,2.45,'CMa'],
+  ['Procyon',7.655,5.22,0.34,'CMi'],['Gomeisa',7.453,8.29,2.89,'CMi'],
+  ['Betelgeuse',5.919,7.41,0.45,'Ori'],['Bellatrix',5.418,6.35,1.64,'Ori'],['Alnitak',5.679,-1.94,1.74,'Ori'],
+  ['Alnilam',5.604,-1.20,1.69,'Ori'],['Mintaka',5.533,-0.30,2.25,'Ori'],['Rigel',5.242,-8.20,0.13,'Ori'],
+  ['Saiph',5.796,-9.67,2.07,'Ori'],['Meissa',5.585,9.93,3.39,'Ori'],
+  ['Aldebaran',4.599,16.51,0.85,'Tau'],['Elnath',5.438,28.61,1.65,'Tau'],['Alcyone',3.791,24.11,2.87,'Tau'],
+  ['ZetaTau',5.627,21.14,3.01,'Tau'],['GammaTau',4.330,15.63,3.65,'Tau'],['EpsilonTau',4.477,19.18,3.53,'Tau'],
+  ['Castor',7.577,31.89,1.58,'Gem'],['Pollux',7.755,28.03,1.14,'Gem'],['Alhena',6.629,16.40,1.92,'Gem'],
+  ['Wasat',7.335,21.98,3.53,'Gem'],['Tejat',6.383,22.51,2.88,'Gem'],
+  ['AlTarf',8.275,9.19,3.52,'Cnc'],['AsellusAus',8.745,18.15,3.94,'Cnc'],['Acubens',8.975,11.86,4.26,'Cnc'],
+  ['Regulus',10.139,11.97,1.36,'Leo'],['Algieba',10.333,19.84,2.08,'Leo'],['Adhafera',10.278,23.42,3.43,'Leo'],
+  ['Rasalas',9.879,26.01,3.88,'Leo'],['EpsilonLeo',9.764,23.77,2.98,'Leo'],['EtaLeo',10.122,16.76,3.49,'Leo'],
+  ['Zosma',11.235,20.52,2.56,'Leo'],['Chertan',11.237,15.43,3.32,'Leo'],['Denebola',11.818,14.57,2.14,'Leo'],
+  ['Spica',13.420,-11.16,0.97,'Vir'],['Porrima',12.694,-1.45,2.74,'Vir'],['Vindemiatrix',13.036,10.96,2.83,'Vir'],
+  ['Heze',13.578,-0.60,3.38,'Vir'],['Zavijava',11.845,1.76,3.59,'Vir'],
+  ['Zubenelgenubi',14.848,-16.04,2.75,'Lib'],['Zubeneschamali',15.283,-9.38,2.61,'Lib'],['GammaLib',15.592,-14.79,3.91,'Lib'],
+  ['Antares',16.490,-26.43,0.96,'Sco'],['Dschubba',16.005,-22.62,2.29,'Sco'],['Acrab',16.091,-19.81,2.62,'Sco'],
+  ['Shaula',17.560,-37.10,1.62,'Sco'],['Sargas',17.622,-43.00,1.87,'Sco'],['EpsilonSco',16.836,-34.29,2.29,'Sco'],
+  ['KausAustralis',18.403,-34.38,1.85,'Sgr'],['Nunki',18.921,-26.30,2.05,'Sgr'],['KausMedia',18.350,-29.83,2.70,'Sgr'],['Ascella',19.043,-29.88,2.60,'Sgr'],
+  ['Dabih',20.350,-14.78,3.05,'Cap'],['DenebAlgedi',21.784,-16.13,2.81,'Cap'],['Nashira',21.668,-16.66,3.69,'Cap'],
+  ['Sadalsuud',21.526,-5.57,2.90,'Aqr'],['Sadalmelik',22.096,-0.32,2.94,'Aqr'],['Skat',22.911,-15.82,3.27,'Aqr'],['Albali',20.794,-9.50,3.78,'Aqr'],
+  ['Alrescha',2.034,2.76,3.82,'Psc'],['EtaPsc',1.524,15.35,3.62,'Psc'],['GammaPsc',23.286,3.28,3.70,'Psc'],['OmegaPsc',23.988,6.86,4.01,'Psc'],
+  ['Hamal',2.120,23.46,2.00,'Ari'],['Sheratan',1.911,20.81,2.64,'Ari'],['Mesarthim',1.884,19.29,3.86,'Ari'],
+  ['Dubhe',11.062,61.75,1.79,'UMa'],['Merak',11.031,56.38,2.37,'UMa'],['Phecda',11.897,53.69,2.44,'UMa'],
+  ['Megrez',12.257,57.03,3.31,'UMa'],['Alioth',12.900,55.96,1.77,'UMa'],['Mizar',13.399,54.93,2.27,'UMa'],['Alkaid',13.792,49.31,1.86,'UMa'],
+  ['Polaris',2.530,89.26,1.98,'UMi'],['Kochab',14.845,74.16,2.08,'UMi'],['Pherkad',15.345,71.83,3.05,'UMi'],
+  ['Thuban',14.073,64.38,3.65,'Dra'],['Edasich',15.415,58.97,3.29,'Dra'],['Aldhibah',17.146,65.71,3.17,'Dra'],
+  ['EtaDra',16.399,61.51,2.73,'Dra'],['Eltanin',17.943,51.49,2.23,'Dra'],['Rastaban',17.507,52.30,2.79,'Dra'],
+  ['Caph',0.153,59.15,2.27,'Cas'],['Schedar',0.675,56.54,2.24,'Cas'],['GammaCas',0.945,60.72,2.39,'Cas'],
+  ['Ruchbah',1.430,60.24,2.68,'Cas'],['Segin',1.907,63.67,3.35,'Cas'],
+  ['Alderamin',21.310,62.59,2.45,'Cep'],
+  ['Capella',5.278,46.00,0.08,'Aur'],['Menkalinan',6.000,44.95,1.90,'Aur'],
+  ['Mirfak',3.405,49.86,1.80,'Per'],['Algol',3.136,40.96,2.12,'Per'],
+  ['Arcturus',14.261,19.18,-0.05,'Boo'],['Izar',14.750,27.07,2.37,'Boo'],['Muphrid',13.911,18.40,2.68,'Boo'],
+  ['Alphecca',15.578,26.71,2.23,'CrB'],
+  ['Kornephoros',16.504,21.49,2.78,'Her'],['Rasalgethi',17.244,14.39,3.06,'Her'],
+  ['Rasalhague',17.582,12.56,2.08,'Oph'],['Sabik',17.173,-15.72,2.43,'Oph'],
+  ['Vega',18.616,38.78,0.03,'Lyr'],['Sheliak',18.835,33.36,3.52,'Lyr'],['Sulafat',18.982,32.69,3.25,'Lyr'],
+  ['Deneb',20.690,45.28,1.25,'Cyg'],['Sadr',20.371,40.26,2.23,'Cyg'],['GienahCyg',20.770,33.97,2.48,'Cyg'],
+  ['DeltaCyg',19.749,45.13,2.86,'Cyg'],['Albireo',19.512,27.96,3.05,'Cyg'],
+  ['Altair',19.846,8.87,0.77,'Aql'],['Tarazed',19.771,10.61,2.72,'Aql'],['Alshain',19.922,6.41,3.71,'Aql'],
+  ['Markab',23.079,15.21,2.49,'Peg'],['Scheat',23.063,28.08,2.42,'Peg'],['Algenib',0.221,15.18,2.84,'Peg'],['Enif',21.736,9.88,2.39,'Peg'],
+  ['Alpheratz',0.140,29.09,2.06,'And'],['Mirach',1.162,35.62,2.05,'And'],['Almach',2.065,42.33,2.26,'And'],
+  ['Alphard',9.460,-8.66,1.99,'Hya'],
+  ['GienahCrv',12.263,-17.54,2.59,'Crv'],['Algorab',12.498,-16.52,2.94,'Crv'],['Kraz',12.573,-23.40,2.65,'Crv'],
+  ['Fomalhaut',22.961,-29.62,1.16,'PsA'],
+  ['Diphda',0.726,-17.99,2.04,'Cet'],['Menkar',3.038,4.09,2.53,'Cet'],
+  ['Achernar',1.629,-57.24,0.46,'Eri'],['Acamar',2.971,-40.30,2.88,'Eri'],['Cursa',5.131,-5.09,2.79,'Eri'],
+  ['Canopus',6.400,-52.70,-0.74,'Car'],['Arneb',5.545,-17.82,2.58,'Lep'],['Alnair',22.137,-46.96,1.74,'Gru'],
+  ['AlphaCen',14.660,-60.83,-0.27,'Cen'],['Hadar',14.064,-60.37,0.61,'Cen'],['Menkent',14.111,-36.37,2.06,'Cen'],
+  ['Acrux',12.443,-63.10,0.76,'Cru'],['Mimosa',12.795,-59.69,1.25,'Cru'],['Gacrux',12.519,-57.11,1.64,'Cru'],['DeltaCru',12.252,-58.75,2.79,'Cru']
+];
+
+const CONSTELLATIONS = {
+  Ori:{ name:'Orion', lines:[['Betelgeuse','Bellatrix'],['Bellatrix','Mintaka'],['Mintaka','Alnilam'],['Alnilam','Alnitak'],['Alnitak','Betelgeuse'],['Alnitak','Saiph'],['Saiph','Rigel'],['Rigel','Mintaka'],['Betelgeuse','Meissa'],['Meissa','Bellatrix']] },
+  CMa:{ name:'Canis Major', lines:[['Sirius','Mirzam'],['Sirius','Wezen'],['Wezen','Adhara'],['Wezen','Aludra']] },
+  CMi:{ name:'Canis Minor', lines:[['Procyon','Gomeisa']] },
+  Tau:{ name:'Taurus', lines:[['GammaTau','Aldebaran'],['Aldebaran','ZetaTau'],['GammaTau','EpsilonTau'],['EpsilonTau','Elnath'],['GammaTau','Alcyone']] },
+  Gem:{ name:'Gemini', lines:[['Castor','Wasat'],['Pollux','Wasat'],['Wasat','Alhena'],['Alhena','Tejat']] },
+  Cnc:{ name:'Cancer', lines:[['AlTarf','AsellusAus'],['AsellusAus','Acubens']] },
+  Leo:{ name:'Leo', lines:[['Regulus','EtaLeo'],['EtaLeo','Algieba'],['Algieba','Adhafera'],['Adhafera','Rasalas'],['Rasalas','EpsilonLeo'],['Regulus','Chertan'],['Chertan','Denebola'],['Denebola','Zosma'],['Zosma','Algieba']] },
+  Vir:{ name:'Virgo', lines:[['Spica','Porrima'],['Porrima','Zavijava'],['Porrima','Vindemiatrix'],['Spica','Heze']] },
+  Lib:{ name:'Libra', lines:[['Zubenelgenubi','Zubeneschamali'],['Zubeneschamali','GammaLib'],['GammaLib','Zubenelgenubi']] },
+  Sco:{ name:'Scorpius', lines:[['Dschubba','Acrab'],['Dschubba','Antares'],['Antares','EpsilonSco'],['EpsilonSco','Sargas'],['Sargas','Shaula']] },
+  Sgr:{ name:'Sagittarius', lines:[['KausAustralis','KausMedia'],['KausMedia','Nunki'],['Nunki','Ascella'],['Ascella','KausAustralis']] },
+  Cap:{ name:'Capricornus', lines:[['Dabih','Nashira'],['Nashira','DenebAlgedi'],['DenebAlgedi','Dabih']] },
+  Aqr:{ name:'Aquarius', lines:[['Sadalmelik','Sadalsuud'],['Sadalsuud','Albali'],['Sadalmelik','Skat']] },
+  Psc:{ name:'Pisces', lines:[['Alrescha','EtaPsc'],['Alrescha','OmegaPsc'],['OmegaPsc','GammaPsc']] },
+  Ari:{ name:'Aries', lines:[['Hamal','Sheratan'],['Sheratan','Mesarthim']] },
+  UMa:{ name:'Ursa Major', lines:[['Dubhe','Merak'],['Merak','Phecda'],['Phecda','Megrez'],['Megrez','Dubhe'],['Megrez','Alioth'],['Alioth','Mizar'],['Mizar','Alkaid']] },
+  UMi:{ name:'Ursa Minor', lines:[['Polaris','Kochab'],['Kochab','Pherkad']] },
+  Dra:{ name:'Draco', lines:[['Eltanin','Rastaban'],['Rastaban','Aldhibah'],['Aldhibah','EtaDra'],['EtaDra','Edasich'],['Edasich','Thuban']] },
+  Cas:{ name:'Cassiopeia', lines:[['Caph','Schedar'],['Schedar','GammaCas'],['GammaCas','Ruchbah'],['Ruchbah','Segin']] },
+  Aur:{ name:'Auriga', lines:[['Capella','Menkalinan'],['Menkalinan','Elnath'],['Elnath','Capella']] },
+  Per:{ name:'Perseus', lines:[['Mirfak','Algol']] },
+  Boo:{ name:'Boötes', lines:[['Arcturus','Izar'],['Arcturus','Muphrid']] },
+  Her:{ name:'Hercules', lines:[['Kornephoros','Rasalgethi']] },
+  Oph:{ name:'Ophiuchus', lines:[['Rasalhague','Sabik']] },
+  Lyr:{ name:'Lyra', lines:[['Vega','Sheliak'],['Sheliak','Sulafat'],['Sulafat','Vega']] },
+  Cyg:{ name:'Cygnus', lines:[['Deneb','Sadr'],['Sadr','Albireo'],['GienahCyg','Sadr'],['Sadr','DeltaCyg']] },
+  Aql:{ name:'Aquila', lines:[['Tarazed','Altair'],['Altair','Alshain']] },
+  Peg:{ name:'Pegasus', lines:[['Markab','Scheat'],['Scheat','Alpheratz'],['Alpheratz','Algenib'],['Algenib','Markab'],['Enif','Markab']] },
+  And:{ name:'Andromeda', lines:[['Alpheratz','Mirach'],['Mirach','Almach']] },
+  Crv:{ name:'Corvus', lines:[['GienahCrv','Algorab'],['Algorab','Kraz']] },
+  Eri:{ name:'Eridanus', lines:[['Cursa','Acamar'],['Acamar','Achernar']] },
+  Cen:{ name:'Centaurus', lines:[['AlphaCen','Hadar'],['Hadar','Menkent']] },
+  Cru:{ name:'Crux', lines:[['Acrux','Gacrux'],['Mimosa','DeltaCru']] }
+};
+
+/* The zodiacal Age = the constellation holding the vernal-equinox sun.
+   Boundaries given as the vernal point's J2000 ecliptic longitude. */
+const ZODIAC_AGES = [
+  ['Psc','Pisces','♓',351.6],['Ari','Aries','♈',29],['Tau','Taurus','♉',53.5],
+  ['Gem','Gemini','♊',90],['Cnc','Cancer','♋',118],['Leo','Leo','♌',138],
+  ['Vir','Virgo','♍',171],['Lib','Libra','♎',218],['Sco','Scorpius','♏',242],
+  ['Sgr','Sagittarius','♐',271],['Cap','Capricornus','♑',300],['Aqr','Aquarius','♒',327]
+];
+
+/* Accumulated general precession + obliquity of date (good to ~1° over ±7,000 yr) */
+function precAngles(year){
+  const T = (year - 2000) / 100;
+  return {
+    dLam: (5028.796195 * T + 1.1054348 * T * T) / 3600,
+    eps: 23.4392911 + (-46.8150 * T - 0.00059 * T * T + 0.001813 * T * T * T) / 3600
+  };
+}
+function precessStar(raH, decD, year){
+  const p = precAngles(year);
+  const e0 = 23.4392911 * D2R, eps = p.eps * D2R;
+  const ra = raH * 15 * D2R, dec = decD * D2R;
+  // equatorial J2000 → ecliptic J2000
+  const sb = Math.sin(dec) * Math.cos(e0) - Math.cos(dec) * Math.sin(e0) * Math.sin(ra);
+  const beta = Math.asin(Math.max(-1, Math.min(1, sb)));
+  let lam = Math.atan2(Math.sin(ra) * Math.cos(e0) + Math.tan(dec) * Math.sin(e0), Math.cos(ra));
+  lam += p.dLam * D2R;       // the equinox drifts; star longitudes shift with it
+  // ecliptic → equatorial of date
+  const sd = Math.sin(beta) * Math.cos(eps) + Math.cos(beta) * Math.sin(eps) * Math.sin(lam);
+  const dec2 = Math.asin(Math.max(-1, Math.min(1, sd)));
+  let ra2 = Math.atan2(Math.sin(lam) * Math.cos(eps) - Math.tan(beta) * Math.sin(eps), Math.cos(lam));
+  if (ra2 < 0) ra2 += Math.PI * 2;
+  return { ra: ra2, dec: dec2 };
+}
+function altAz(eq, lst){
+  const H = lst - eq.ra;
+  const sa = Math.sin(SITE_LAT) * Math.sin(eq.dec) + Math.cos(SITE_LAT) * Math.cos(eq.dec) * Math.cos(H);
+  const alt = Math.asin(Math.max(-1, Math.min(1, sa)));
+  const az = Math.atan2(-Math.cos(eq.dec) * Math.sin(H),
+    Math.sin(eq.dec) * Math.cos(SITE_LAT) - Math.cos(eq.dec) * Math.cos(H) * Math.sin(SITE_LAT));
+  return { alt, az };
+}
+function skyPos(aa, r){
+  r = r || SKY_R;
+  return new THREE.Vector3(
+    r * Math.cos(aa.alt) * Math.sin(aa.az),
+    r * Math.sin(aa.alt),
+    -r * Math.cos(aa.alt) * Math.cos(aa.az));
+}
+function zodiacAge(year){
+  const lam = ((-precAngles(year).dLam % 360) + 360) % 360; // vernal point in J2000 λ
+  for (let i = 0; i < ZODIAC_AGES.length; i++){
+    const a = ZODIAC_AGES[i][3], b = ZODIAC_AGES[(i + 1) % 12][3];
+    if (a < b ? (lam >= a && lam < b) : (lam >= a || lam < b)) return ZODIAC_AGES[i];
+  }
+  return ZODIAC_AGES[0];
+}
+function poleStar(year){
+  const p = precAngles(year);
+  // pole of date expressed in the J2000 frames
+  const beta = (90 - p.eps) * D2R, lam = (90 - p.dLam) * D2R;
+  const e0 = 23.4392911 * D2R;
+  const sd = Math.sin(beta) * Math.cos(e0) + Math.cos(beta) * Math.sin(e0) * Math.sin(lam);
+  const dec = Math.asin(Math.max(-1, Math.min(1, sd)));
+  const ra = Math.atan2(Math.sin(lam) * Math.cos(e0) - Math.tan(beta) * Math.sin(e0), Math.cos(lam));
+  let best = null, bestSep = 1e9;
+  STARS.forEach(s => {
+    if (s[3] > 4.2) return;
+    const ra2 = s[1] * 15 * D2R, dec2 = s[2] * D2R;
+    const sep = Math.acos(Math.max(-1, Math.min(1,
+      Math.sin(dec) * Math.sin(dec2) + Math.cos(dec) * Math.cos(dec2) * Math.cos(ra - ra2))));
+    if (sep < bestSep){ bestSep = sep; best = s[0]; }
+  });
+  return bestSep < 9 * D2R ? { name: best, sep: bestSep / D2R } : null;
+}
+
+function updateSky(){
+  if (!webglOK || !skyGroup) return;
+  document.body.classList.toggle('night-on', !!state.night);
+  // clear previous build
+  skyFadeMats = [];
+  const trash = [];
+  skyGroup.traverse(o => { if (o !== skyGroup) trash.push(o); });
+  trash.forEach(o => {
+    if (o.parent) o.parent.remove(o);
+    if (o.geometry) o.geometry.dispose();
+    if (o.material){ if (o.material.map) o.material.map.dispose(); o.material.dispose(); }
+  });
+  skyGroup.visible = !!state.night;
+  if (!state.night) return;
+
+  const era = ERAS[state.era];
+  const year = (typeof era.year === 'number') ? era.year : 2000;
+  const eqs = {};
+  STARS.forEach(s => { eqs[s[0]] = precessStar(s[1], s[2], year); });
+  const aln = eqs['Alnitak'];
+  // Sky moment: Alnitak on the meridian, or just before equinox sunrise
+  const lst = state.skyMoment === 'orion' ? aln.ra : 17.7 * 15 * D2R;
+
+  function fade(mat, base){ mat.fog = false; mat.transparent = true; mat.opacity = 0; mat.userData.fadeBase = base; skyFadeMats.push(mat); }
+  function addLabel(text, p, scale){
+    const sp = textSprite(text);
+    fade(sp.material, .95);
+    sp.position.copy(p);
+    if (scale) sp.scale.multiplyScalar(scale);
+    skyGroup.add(sp);
+  }
+
+  // --- stars, bucketed by magnitude ---
+  const buckets = [
+    { max: .6, size: 42, op: 1 }, { max: 1.6, size: 30, op: .95 },
+    { max: 2.7, size: 20, op: .85 }, { max: 9, size: 12, op: .7 }
+  ];
+  const bPos = buckets.map(() => []), bCol = buckets.map(() => []);
+  const starPos = {};
+  STARS.forEach(s => {
+    const aa = altAz(eqs[s[0]], lst);
+    if (aa.alt < 2.2 * D2R) return; // below the horizon (or lost in its haze) this night
+    const p = skyPos(aa);
+    starPos[s[0]] = p;
+    const ext = .35 + .65 * Math.min(1, Math.max(0, aa.alt / (16 * D2R))); // horizon extinction
+    let bi = buckets.findIndex(b => s[3] < b.max); if (bi < 0) bi = buckets.length - 1;
+    bPos[bi].push(p.x, p.y, p.z);
+    const warm = s[0] === 'Betelgeuse' || s[0] === 'Antares' || s[0] === 'Aldebaran' || s[0] === 'Arcturus';
+    bCol[bi].push(ext, ext * (warm ? .8 : .97), ext * (warm ? .58 : 1));
+  });
+  const starTex = glowTexture('#e8f0ff', false);
+  buckets.forEach((b, i) => {
+    if (!bPos[i].length) return;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(bPos[i]), 3));
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(bCol[i]), 3));
+    const m = new THREE.PointsMaterial({ size: b.size, map: starTex, vertexColors: true,
+      depthWrite: false, blending: THREE.AdditiveBlending });
+    fade(m, b.op);
+    skyGroup.add(new THREE.Points(g, m));
+  });
+
+  // --- constellation figures (the era's zodiacal Age in gold) ---
+  const age = zodiacAge(year);
+  const linePts = [], goldPts = [];
+  Object.keys(CONSTELLATIONS).forEach(code => {
+    const arr = code === age[0] ? goldPts : linePts;
+    CONSTELLATIONS[code].lines.forEach(seg => {
+      const a = starPos[seg[0]], b = starPos[seg[1]];
+      if (a && b) arr.push(a.x, a.y, a.z, b.x, b.y, b.z);
+    });
+  });
+  [[linePts, 0x4f6ea3, .4], [goldPts, 0xC9A86C, .9]].forEach(([pts, color, op]) => {
+    if (!pts.length) return;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
+    const m = new THREE.LineBasicMaterial({ color });
+    fade(m, op);
+    skyGroup.add(new THREE.LineSegments(g, m));
+  });
+
+  // --- labels ---
+  function centroid(code){
+    const v = new THREE.Vector3(); let n = 0;
+    STARS.forEach(s => { if (s[4] === code && starPos[s[0]]){ v.add(starPos[s[0]]); n++; } });
+    return n ? v.multiplyScalar(1 / n).normalize().multiplyScalar(SKY_R) : null;
+  }
+  [['Ori','Orion'],['UMa','Ursa Major'],['Cas','Cassiopeia'],['Cyg','Cygnus'],['CMa','Canis Major']].forEach(c => {
+    if (c[0] === age[0]) return;
+    const p = centroid(c[0]);
+    if (p){ p.y += 70; addLabel(c[1], p, .85); }
+  });
+  const agePos = centroid(age[0]);
+  if (agePos){ agePos.y += 95; addLabel('✦ Age of ' + age[1] + ' ' + age[2], agePos, 1.15); }
+  if (starPos['Sirius']) addLabel('Sirius', starPos['Sirius'].clone().add(new THREE.Vector3(0, -75, 0)), .8);
+
+  // --- celestial pole + pole star ---
+  const ps = poleStar(year);
+  const polePos = skyPos({ alt: SITE_LAT, az: 0 });
+  const ring = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('#9db8e8'), depthTest: false }));
+  fade(ring.material, .75);
+  ring.position.copy(polePos); ring.scale.set(64, 64, 1);
+  skyGroup.add(ring);
+  addLabel(ps ? 'Celestial pole · pole star: ' + ps.name : 'Celestial pole — no bright pole star',
+    polePos.clone().add(new THREE.Vector3(0, 95, 0)), .9);
+
+  // --- cardinal points on the horizon ---
+  [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(c => {
+    addLabel(c[0], skyPos({ alt: 3 * D2R, az: c[1] * D2R }, SKY_R * .97), 1.05);
+  });
+
+  // --- the King's Chamber south shaft, fixed at 45° while the stars precess ---
+  const alnAA = altAz(aln, lst);
+  if (era.visual.pyramid){ // no shaft before there is a pyramid
+    const sp0 = new THREE.Vector3(6, 46, 8);
+    const shaftEnd = sp0.clone().add(new THREE.Vector3(0, Math.SQRT1_2, Math.SQRT1_2).multiplyScalar(SKY_R * .92));
+    const shaft = mkLine([sp0, shaftEnd], 0xE2C893, true);
+    fade(shaft.material, .85);
+    skyGroup.add(shaft);
+    addLabel("King's south shaft · fixed 45°", shaftEnd.clone().add(new THREE.Vector3(0, -120, 0)), .85);
+    if (starPos['Alnitak'])
+      addLabel('Alnitak · ' + (alnAA.alt / D2R).toFixed(1) + '° on the meridian',
+        starPos['Alnitak'].clone().add(new THREE.Vector3(0, 80, 0)), .85);
+  }
+
+  // --- equinox dawn: glow where the sun is about to rise ---
+  if (state.skyMoment === 'dawn'){
+    const vern = altAz({ ra: 0, dec: 0 }, lst);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('#ffb061', false), depthTest: false }));
+    fade(glow.material, .8);
+    glow.position.copy(skyPos({ alt: Math.max(vern.alt, .5 * D2R), az: vern.az }, SKY_R * .96));
+    glow.scale.set(950, 520, 1);
+    skyGroup.add(glow);
+    addLabel('Equinox sun rises here', skyPos({ alt: 9 * D2R, az: vern.az }, SKY_R * .92), .85);
+  }
+
+  // --- readout ---
+  const info = document.getElementById('sky-info');
+  if (info){
+    info.innerHTML = '<strong class="text-goldlight">' + era.date + '</strong> · Age of ' + age[1] + ' ' + age[2] +
+      ' · Pole star: ' + (ps ? ps.name : '—') +
+      (state.skyMoment === 'orion'
+        ? ' · Alnitak ' + (alnAA.alt / D2R).toFixed(1) + '° vs shaft 45°'
+        : ' · the equinox sun rises in ' + age[1]);
+  }
+}
+
+/* ---- picking ---- */
+const raycaster = (typeof THREE !== 'undefined') ? new THREE.Raycaster() : null;
+const pointerNDC = { x: 0, y: 0 };
+function setupPicking(canvas){
+  let downX = 0, downY = 0;
+  canvas.addEventListener('pointerdown', e => {
+    downX = e.clientX; downY = e.clientY;
+    if (tour) endTour();
+  });
+  canvas.addEventListener('pointerup', e => {
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
+    const hit = pick(e.clientX, e.clientY);
+    if (hit) selectHotspot(hit.userData.id, true);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (IS_MOBILE) return;
+    const hit = pick(e.clientX, e.clientY);
+    canvas.style.cursor = hit ? 'pointer' : 'grab';
+  });
+}
+function pick(cx, cy){
+  if (!webglOK) return null;
+  pointerNDC.x = (cx / window.innerWidth) * 2 - 1;
+  pointerNDC.y = -(cy / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+  const hits = raycaster.intersectObjects(hotspotSprites).filter(h => h.object.visible);
+  return hits.length ? hits[0].object : null;
+}
+
+/* ---- camera ---- */
+function easeInOut(t){ return t < .5 ? 2*t*t : -1 + (4 - 2*t) * t; }
+function tweenCamera(pos, target, dur){
+  if (!webglOK) return;
+  controls.autoRotate = false;
+  if (REDUCED){ camera.position.copy(pos); controls.target.copy(target); return; }
+  camTween = { p0: camera.position.clone(), p1: pos.clone(), t0: controls.target.clone(), t1: target.clone(), start: performance.now(), dur: dur || 1100 };
+}
+function applyPreset(name){
+  const mon = activeMon();
+  const p = mon.presets && mon.presets[name];
+  if (!p) return;
+  const o = monOrigin(mon);
+  tweenCamera(
+    new THREE.Vector3(p.p[0] + o[0], p.p[1] + o[1], p.p[2] + o[2]),
+    new THREE.Vector3(p.t[0] + o[0], p.t[1] + o[1], p.t[2] + o[2]), 1300);
+}
+function focusHotspot(h, sprite){
+  if (!webglOK) return;
+  const target = sprite.position.clone();
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  if (dir.lengthSq() < .001) dir.set(1, .4, 1).normalize();
+  const pos = target.clone().add(dir.multiplyScalar(h.dist || 180));
+  pos.y = Math.max(pos.y, 12);
+  tweenCamera(pos, target, 1000);
+}
+
+/* ---- era visuals ---- */
+const NIGHT_SKY = 'linear-gradient(180deg,#04060d 0%,#0a1226 60%,#1a2440 100%)';
+const NIGHT_DAWN = 'linear-gradient(180deg,#04060d 0%,#0c1428 52%,#2a2c4e 84%,#54405a 100%)';
+const SUN_LOW = new THREE.Vector3(380, 70, -230);
+const SUN_HIGH = new THREE.Vector3(170, 330, -70);
+const MOON_POS = new THREE.Vector3(-260, 190, 330);
+let skyFlip = false;
+function setSky(gradient){
+  const a = document.getElementById('sky-a'), b = document.getElementById('sky-b');
+  const showing = skyFlip ? b : a, hidden = skyFlip ? a : b;
+  hidden.style.background = gradient;
+  hidden.style.opacity = '1';
+  showing.style.opacity = '0';
+  skyFlip = !skyFlip;
+}
+function computeVisTarget(){
+  const v = ERAS[state.era].visual;
+  // CSS sky works even without WebGL
+  setSky(state.night ? (state.skyMoment === 'dawn' ? NIGHT_DAWN : NIGHT_SKY) : v.sky);
+  if (!webglOK){
+    document.body.classList.toggle('night-on', !!state.night);
+    return;
+  }
+  if (state.night){
+    visTgt.sunInt = .32;
+    visTgt.sun.set('#a8bce6');
+    visTgt.fog.set('#0a1124');
+    visTgt.stars = .95;
+    visTgt.dust = .15;
+    visTgt.sunPos.copy(MOON_POS);
+  } else {
+    visTgt.sunInt = v.sunInt;
+    visTgt.sun.set(v.sun);
+    visTgt.fog.set(v.fog);
+    visTgt.stars = 0;
+    visTgt.dust = v.dust;
+    visTgt.sunPos.lerpVectors(SUN_LOW, SUN_HIGH, v.sunH);
+  }
+  visTgt.casing = v.casing;
+  visTgt.cap = v.cap;
+  visTgt.ghost = v.ghost;
+  visTgt.sand = v.sphinxSand || 0;
+  if (webglOK){
+    pyramidGroup.visible = v.pyramid;
+    if (sceneryGroup) sceneryGroup.visible = v.pyramid;
+    if (sphinxGroup) sphinxGroup.visible = v.pyramid;
+    updateSky();
+    if (!v.pyramid && interiorGroup) interiorGroup.visible = false;
+    else if (state.view === 'cutaway' && interiorGroup) interiorGroup.visible = true;
+    refreshHotspots();
+  } else {
+    document.body.classList.toggle('night-on', !!state.night);
+  }
+}
+function lerpVis(dt){
+  const k = REDUCED ? 1 : 1 - Math.pow(.002, dt);
+  ['casing','cap','ghost','sand','sunInt','stars','dust'].forEach(p => { visCur[p] += (visTgt[p] - visCur[p]) * k; });
+  visCur.sun.lerp(visTgt.sun, k);
+  visCur.fog.lerp(visTgt.fog, k);
+  visCur.sunPos.lerp(visTgt.sunPos, k);
+}
+function applyVis(){
+  const cut = state.view === 'cutaway';
+  const casingOp = visCur.casing * (cut ? .06 : 1);
+  casingMesh.material.opacity = casingOp;
+  casingMesh.material.depthWrite = casingOp > .55;
+  casingMesh.visible = casingOp > .015;
+  capMesh.material.opacity = visCur.cap * (cut ? .25 : 1);
+  capMesh.visible = visCur.cap > .03 && pyramidGroup.visible;
+  ghostMesh.material.opacity = visCur.ghost;
+  ghostMesh.visible = visCur.ghost > .01;
+  sceneryCasings.forEach(m => { m.opacity = visCur.casing; m.visible = visCur.casing > .02; });
+  if (sphinxGhost){
+    sphinxGhost.children.forEach(l => { l.material.opacity = visCur.ghost * .85; });
+    sphinxGhost.visible = visCur.ghost > .01;
+  }
+  if (sandMesh){
+    sandMesh.scale.set(46, Math.max(.01, 11 * visCur.sand), 17);
+    sandMesh.visible = visCur.sand > .03 && sphinxGroup.visible;
+  }
+  sun.intensity = visCur.sunInt;
+  sun.color.copy(visCur.sun);
+  sun.position.copy(visCur.sunPos);
+  hemi.intensity = state.night ? .18 : .5;
+  scene.fog.color.copy(visCur.fog);
+  stars.material.opacity = visCur.stars * .55;
+  dust.material.opacity = visCur.dust * .55;
+  for (let i = 0; i < skyFadeMats.length; i++){
+    const m = skyFadeMats[i];
+    m.opacity = (m.userData.fadeBase || 1) * visCur.stars;
+  }
+  if (sunSprite){
+    sunSprite.visible = !state.night;
+    sunSprite.position.copy(visCur.sunPos).normalize().multiplyScalar(2500);
+    sunSprite.material.color.copy(visCur.sun);
+    sunSprite.material.opacity = Math.min(.95, visCur.sunInt * .7) * (1 - visCur.stars);
+  }
+}
+
+function applyView(mode){
+  state.view = mode;
+  const cut = mode === 'cutaway';
+  if (webglOK){
+    interiorGroup.visible = cut && pyramidGroup.visible;
+    coreMats.forEach(m => { m.transparent = cut; m.opacity = cut ? .1 : 1; m.depthWrite = !cut; m.needsUpdate = true; });
+    ground.material.transparent = true;
+    ground.material.opacity = cut ? .35 : 1;
+  }
+  const ext = document.getElementById('view-exterior'), c = document.getElementById('view-cutaway');
+  ext.classList.toggle('bg-gold/15', !cut); ext.classList.toggle('text-gold', !cut); ext.classList.toggle('text-sand/80', cut);
+  c.classList.toggle('bg-gold/15', cut); c.classList.toggle('text-gold', cut); c.classList.toggle('text-sand/80', !cut);
+  ext.setAttribute('aria-pressed', String(!cut));
+  c.setAttribute('aria-pressed', String(cut));
+  saveSession();
+}
+
+function toggleNight(){
+  state.night = !state.night;
+  const b = document.getElementById('view-night');
+  b.classList.toggle('bg-gold/15', state.night);
+  b.classList.toggle('text-gold', state.night);
+  b.setAttribute('aria-pressed', String(state.night));
+  computeVisTarget();
+  if (state.night) showToast('The real sky of this era — precessed star positions, pole star and zodiacal Age');
+}
+function setSkyMoment(m){
+  if (m !== 'dawn' && m !== 'orion') return;
+  state.skyMoment = m;
+  document.querySelectorAll('[data-skymoment]').forEach(b => b.classList.toggle('active', b.dataset.skymoment === m));
+  if (state.night) computeVisTarget();
+}
+function setMin(key, on){
+  document.body.classList.toggle(key + '-min', on);
+  const btn = $(key === 'panel' ? 'panel-min' : key + '-min');
+  if (btn) btn.setAttribute('aria-expanded', String(!on));
+  saveSession();
+}
+
+/* ============================ TOURS ============================ */
+function startTour(){
+  const mon = activeMon();
+  if (!webglOK || !mon.tour) return;
+  if (REDUCED){ showToast('Fly-through is disabled while reduced motion is on'); return; }
+  const o = monOrigin(mon);
+  const pts = mon.tour.points.map(p => new THREE.Vector3(p[0] + o[0], p[1] + o[1], p[2] + o[2]));
+  tour = { curve: new THREE.CatmullRomCurve3(pts), t: 0, dur: mon.tour.dur || 16, look: pts[pts.length - 1].clone() };
+  if (mon.tour.cutaway && state.view !== 'cutaway') applyView('cutaway');
+  controls.autoRotate = false; controls.enabled = false; camTween = null;
+  state.touring = true;
+  tourBtnUI(true);
+  showToast('Fly-through — press Esc or tap to exit');
+}
+function endTour(){
+  if (!tour) return;
+  controls.target.copy(tour.look);
+  tour = null;
+  state.touring = false;
+  controls.enabled = true;
+  tourBtnUI(false);
+}
+function tourBtnUI(on){
+  const b = document.getElementById('tour-btn');
+  b.classList.toggle('bg-gold/15', on);
+  b.classList.toggle('text-gold', on);
+  b.setAttribute('aria-pressed', String(on));
+}
+function updateTourBtn(){
+  const mon = activeMon();
+  document.getElementById('tour-btn').textContent = '✈ ' + ((mon.tour && mon.tour.label) || 'Fly-through');
+}
+
+/* ---- animation loop ---- */
+let elapsed = 0;
+function animate(){
+  const dt = Math.min(clock.getDelta(), .1);
+  elapsed += dt;
+
+  if (tour){
+    tour.t += dt / tour.dur;
+    const t = Math.min(tour.t, 1);
+    const tt = t * t * (3 - 2 * t);
+    const pos = tour.curve.getPointAt(tt);
+    const look = tour.curve.getPointAt(Math.min(tt + .025, 1));
+    camera.position.copy(pos);
+    if (look.distanceToSquared(pos) > .01){ camera.lookAt(look); tour.look.copy(look); }
+    if (t >= 1) endTour();
+  } else if (camTween){
+    const k = easeInOut(Math.min(1, (performance.now() - camTween.start) / camTween.dur));
+    camera.position.lerpVectors(camTween.p0, camTween.p1, k);
+    controls.target.lerpVectors(camTween.t0, camTween.t1, k);
+    if (k >= 1) camTween = null;
+  }
+  if (!tour) controls.update();
+  lerpVis(dt); applyVis();
+
+  if (!REDUCED){
+    hotspotSprites.forEach((s, i) => {
+      if (!s.visible) return;
+      const sel = s.userData.id === state.hotspot;
+      const base = sel ? 17 : 13;
+      const p = base + Math.sin(elapsed * 2.2 + i * 1.3) * 1.6;
+      s.scale.set(p, p, 1);
+      s.material.opacity = sel ? 1 : .8;
+    });
+  }
+  if (!REDUCED && dust.material.opacity > .02){
+    const a = dust.geometry.attributes.position;
+    for (let i = 0; i < a.count; i++){
+      a.array[i*3]   = dustBase[i*3] + Math.sin(elapsed * .16 + i) * 9;
+      a.array[i*3+1] = dustBase[i*3+1] + Math.sin(elapsed * .3 + i * 2.1) * 7;
+    }
+    a.needsUpdate = true;
+  }
+  renderer.render(scene, camera);
+}
+
+function onResize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+/* ============================ UI ============================ */
+
+const $ = id => document.getElementById(id);
+function announce(msg){ $('sr-live').textContent = msg; }
+let toastTimer = null;
+function showToast(msg){
+  if (!msg) return;
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ---- monument switcher ---- */
+function renderMonumentSwitch(){
+  const el = $('monument-switch');
+  el.innerHTML = MONUMENTS.map(m =>
+    `<button class="chip rounded-full px-3.5 md:px-4 py-1.5 text-[12px] md:text-[12.5px] ${m.id === state.monument ? 'active' : ''}" data-mon="${m.id}" aria-pressed="${m.id === state.monument}">
+       <span aria-hidden="true">${m.icon || '◆'}</span> ${m.label}</button>`).join('');
+  el.querySelectorAll('[data-mon]').forEach(b => b.addEventListener('click', () => setMonument(b.dataset.mon)));
+}
+function setMonument(id, opts){
+  if (state.monument === id) return;
+  if (tour) endTour();
+  state.monument = id;
+  state.hotspot = null;
+  state.tab = 'overview';
+  showMeasure(null);
+  refreshHotspots();
+  renderMonumentSwitch();
+  renderPanel();
+  updateTourBtn();
+  if (!(opts && opts.noFly)) applyPreset('aerial');
+  announce('Monument: ' + activeMon().name);
+  saveSession();
+}
+
+/* ---- timeline ---- */
+function buildTimeline(){
+  const ticks = $('tl-ticks');
+  const n = ERAS.length;
+  ERAS.forEach((e, i) => {
+    const x = (i / (n - 1)) * 100;
+    const tick = document.createElement('div');
+    tick.className = 'tl-tick'; tick.style.left = x + '%';
+    ticks.appendChild(tick);
+    const lab = document.createElement('div');
+    lab.className = 'tl-label'; lab.style.left = x + '%';
+    lab.textContent = e.label;
+    ticks.appendChild(lab);
+  });
+  const track = $('tl-track');
+  let dragging = false;
+  const eraFromX = cx => {
+    const r = track.getBoundingClientRect();
+    const p = Math.min(1, Math.max(0, (cx - r.left) / r.width));
+    return Math.round(p * (n - 1));
+  };
+  track.addEventListener('pointerdown', e => { dragging = true; track.setPointerCapture(e.pointerId); setEra(eraFromX(e.clientX)); });
+  track.addEventListener('pointermove', e => { if (dragging) setEra(eraFromX(e.clientX)); });
+  track.addEventListener('pointerup', () => { dragging = false; });
+  track.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp'){ e.preventDefault(); setEra(Math.min(n - 1, state.era + 1)); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown'){ e.preventDefault(); setEra(Math.max(0, state.era - 1)); }
+    else if (e.key === 'Home'){ e.preventDefault(); setEra(0); }
+    else if (e.key === 'End'){ e.preventDefault(); setEra(n - 1); }
+  });
+  updateTimelineUI();
+}
+function updateTimelineUI(){
+  const n = ERAS.length, i = state.era, x = (i / (n - 1)) * 100;
+  $('tl-handle').style.left = x + '%';
+  $('tl-progress').style.width = x + '%';
+  const era = ERAS[i];
+  $('era-name').textContent = era.label;
+  $('era-date').textContent = era.date;
+  const track = $('tl-track');
+  track.setAttribute('aria-valuenow', String(i));
+  track.setAttribute('aria-valuetext', era.label + ', ' + era.date);
+  document.querySelectorAll('.tl-tick').forEach((t, j) => t.classList.toggle('passed', j <= i));
+  document.querySelectorAll('.tl-label').forEach((l, j) => l.classList.toggle('active', j === i));
+}
+function setEra(i, silent){
+  if (i === state.era) return;
+  state.era = i;
+  computeVisTarget();
+  updateTimelineUI();
+  renderPanel();
+  if (!silent){
+    announce('Era: ' + ERAS[i].label + ', ' + ERAS[i].date);
+    saveSession();
+  }
+}
+
+/* ---- hotspots / panel ---- */
+function selectHotspot(id, focus){
+  const mon = activeMon();
+  let h = (mon.hotspots || []).find(x => x.id === id);
+  if (!h){ // hotspot belongs to another monument (clicked in 3D)
+    const owner = MONUMENTS.find(m => (m.hotspots || []).some(x => x.id === id));
+    if (!owner) return;
+    setMonument(owner.id, { noFly: true });
+    h = owner.hotspots.find(x => x.id === id);
+  }
+  state.hotspot = id;
+  state.tab = 'overview';
+  renderPanel();
+  if (h.interior && state.view !== 'cutaway') applyView('cutaway');
+  const sprite = hotspotSprites.find(s => s.userData.id === id);
+  if (focus && sprite) focusHotspot(h, sprite);
+  announce('Selected: ' + h.name);
+  if (window.innerWidth < 1024) openPanelSheet(true);
+  saveSession();
+}
+function clearHotspot(){
+  state.hotspot = null;
+  state.tab = 'overview';
+  renderPanel();
+}
+
+function kidCard(text){
+  return `<div class="kid-card px-4 py-3 mb-4 text-[13px] leading-relaxed"><span class="text-goldlight font-medium">🌟 For young explorers:</span> ${text}</div>`;
+}
+function erosionLabCard(){
+  return `<div class="mt-4 rounded-xl border border-teal/40 bg-teal/5 p-3.5">
+    <p class="text-[10.5px] uppercase tracking-[.2em] mb-1.5" style="color:#6fc4b2">🌧 Erosion Lab — paint the evidence on the walls</p>
+    <p class="text-[12px] text-sand/65 mb-2.5">The enclosure walls are the battlefield. Toggle each reading and orbit close to judge for yourself.</p>
+    <div class="flex flex-wrap gap-2">
+      <button data-erosion="rain" class="chip rounded-full px-3 py-1.5 text-[12px] ${state.erosion==='rain'?'active':''}">Rain runoff (Schoch)</button>
+      <button data-erosion="wind" class="chip rounded-full px-3 py-1.5 text-[12px] ${state.erosion==='wind'?'active':''}">Wind &amp; salt (consensus)</button>
+      <button data-erosion="plain" class="chip rounded-full px-3 py-1.5 text-[12px] ${state.erosion==='plain'?'active':''}">Neutral</button>
+    </div>
+  </div>`;
+}
+
+function renderPanel(){
+  const era = ERAS[state.era];
+  const mon = activeMon();
+  const h = state.hotspot ? (mon.hotspots || []).find(x => x.id === state.hotspot) : null;
+  $('panel-era-chip').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-gold pulse-dot"></span> ${era.label} · ${era.date}`;
+  $('panel-title').textContent = h ? h.name : mon.name;
+  $('panel-sub').textContent = h ? h.sub : mon.sub;
+  $('panel-back').classList.toggle('hidden', !h);
+
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const on = b.dataset.tab === state.tab;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+
+  const body = $('panel-body');
+  let html = '';
+  const notBuilt = !era.visual.pyramid;
+  const src = h || mon;
+
+  if (state.tab === 'overview'){
+    if (notBuilt){
+      html += `<div class="theory-alt rounded-lg px-3.5 py-2.5 mb-4 text-[12.5px]"><strong class="text-goldlight">This era precedes the monuments</strong> — at least by the mainstream chronology. The markers will return once construction begins.</div>`;
+    }
+    if (state.family && src.kid){
+      html += kidCard(src.kid);
+      html += `<details class="deeper mb-3"><summary>Go deeper</summary><p class="mt-2 text-sand/80">${src.overview}</p></details>`;
+    } else {
+      html += `<p>${src.overview}</p>`;
+    }
+    if (mon.erosionLab && (!h || h.id === 'sx-enclosure')) html += erosionLabCard();
+    html += `<div class="mt-4 rounded-xl border border-sand/10 bg-sand/[.03] p-3.5">
+      <p class="text-[10.5px] uppercase tracking-[.2em] text-gold/80 mb-1.5">Era Context — ${era.tagline}</p>
+      ${state.family && era.kid ? `<p class="text-[12.5px] text-goldlight/90 mb-2">${era.kid}</p>` : ''}
+      <p class="text-[12.5px] text-sand/75">${era.context}</p>
+      <ul class="mt-2.5 space-y-1.5">${era.points.map(p => `<li class="text-[12px] text-sand/65 flex gap-2"><span class="text-gold/70 shrink-0">▸</span><span>${p}</span></li>`).join('')}</ul>
+    </div>`;
+    html += `<p class="text-[10.5px] uppercase tracking-[.2em] text-gold/80 mt-5 mb-2">Locations — ${mon.label}</p>
+      <div class="grid grid-cols-1 gap-1.5">${(mon.hotspots || []).map(x => `
+        <button class="loc-btn text-left text-[12.5px] px-3 py-2 rounded-lg border transition-colors ${x.id === state.hotspot ? 'border-gold/60 bg-gold/10 text-goldlight' : 'border-sand/10 hover:border-gold/40 text-sand/75'}" data-loc="${x.id}">
+          <span class="text-gold/80 mr-1.5">◆</span>${x.name}</button>`).join('')}
+      </div>`;
+  }
+  else if (state.tab === 'data'){
+    const rows = h ? h.measurements : mon.measurements;
+    html += `<dl>${rows.map(r => `<div class="data-row"><dt>${r[0]}</dt><dd class="max-w-[60%]">${r[1]}</dd></div>`).join('')}</dl>`;
+    if (mon.measureChips && mon.measureChips.length){
+      html += `<p class="text-[10.5px] uppercase tracking-[.2em] text-gold/80 mt-5 mb-2">Highlight in 3D</p>
+        <div class="flex flex-wrap gap-2">${mon.measureChips.map(c =>
+          `<button data-measure="${c.key}" class="chip measure-chip rounded-full px-3.5 py-1.5 text-[12px] ${activeMeasure===c.key?'active':''}">${c.label}</button>`).join('')}
+        </div>
+        <p class="text-[11px] text-sand/45 mt-3">Tip: dimensions read best from the Aerial or Ground camera in Exterior view. Click a chip again to hide.</p>`;
+    }
+    if (!h && mon.id === 'great-pyramid') html += `<p class="text-[11px] text-sand/45 mt-2">1 royal cubit = 0.5236 m = 7 palms = 28 fingers. The slope is a seked of 5½ palms: rise 1 cubit, run 5½ palms.</p>`;
+  }
+  else { // theories
+    html += `
+      <div class="theory-mainstream rounded-lg p-3.5 mb-3">
+        <p class="text-[10.5px] uppercase tracking-[.18em] text-lapislight mb-1.5">Mainstream Consensus</p>
+        <p class="text-[12.5px] text-sand/85">${src.mainstream}</p>
+      </div>
+      <div class="theory-alt rounded-lg p-3.5 mb-3">
+        <p class="text-[10.5px] uppercase tracking-[.18em] text-goldlight mb-1.5">Alternative Hypotheses</p>
+        <p class="text-[12.5px] text-sand/85">${src.alternative}</p>
+      </div>
+      <div class="theory-recent rounded-lg p-3.5 mb-4">
+        <p class="text-[10.5px] uppercase tracking-[.18em] mb-1.5" style="color:#6fc4b2">Recent Findings</p>
+        <p class="text-[12.5px] text-sand/85">${src.recent}</p>
+      </div>`;
+    if (mon.erosionLab) html += erosionLabCard() + '<div class="mb-4"></div>';
+    html += `<button id="open-lab-cta" class="btn-gold w-full rounded-xl py-2.5 text-[13px]" data-debate="${src.debate || mon.debate}">⚖ Open in Theory Lab</button>
+      <p class="text-[10.5px] text-sand/40 mt-3 text-center">All positions attributed · exploration, not endorsement</p>`;
+  }
+
+  body.innerHTML = html;
+  body.classList.remove('fade-swap'); void body.offsetWidth; body.classList.add('fade-swap');
+
+  body.querySelectorAll('[data-loc]').forEach(b => b.addEventListener('click', () => selectHotspot(b.dataset.loc, true)));
+  body.querySelectorAll('[data-measure]').forEach(b => b.addEventListener('click', () => showMeasure(b.dataset.measure)));
+  body.querySelectorAll('[data-erosion]').forEach(b => b.addEventListener('click', () => applyErosion(b.dataset.erosion)));
+  const cta = body.querySelector('#open-lab-cta');
+  if (cta) cta.addEventListener('click', () => { openLab(cta.dataset.debate); });
+}
+
+/* ---- mobile sheet ---- */
+function openPanelSheet(open){
+  document.body.classList.toggle('panel-open', open);
+  $('panel-toggle').setAttribute('aria-expanded', String(open));
+}
+
+/* ---- Family Mode ---- */
+function toggleFamily(){
+  state.family = !state.family;
+  const b = $('family-btn');
+  b.classList.toggle('text-gold', state.family);
+  b.classList.toggle('bg-gold/10', state.family);
+  b.setAttribute('aria-pressed', String(state.family));
+  renderPanel();
+  showToast(state.family ? '✦ Family Mode on — kid-friendly explanations first' : 'Family Mode off');
+  saveSession();
+}
+
+/* ---- Theory Lab ---- */
+function buildLab(){
+  const chips = $('lab-chips');
+  chips.innerHTML = DEBATES.map(d =>
+    `<button class="chip rounded-full px-4 py-2 text-[12.5px] ${d.id === state.debate ? 'active' : ''}" data-debate="${d.id}" role="tab" aria-selected="${d.id === state.debate}">${d.title}</button>`).join('');
+  chips.querySelectorAll('[data-debate]').forEach(b => b.addEventListener('click', () => { state.debate = b.dataset.debate; buildLab(); }));
+
+  const d = DEBATES.find(x => x.id === state.debate);
+  if (!d) return;
+  const col = (data, cls, dotColor) => `
+    <div class="${cls} rounded-2xl p-5">
+      <p class="text-[11px] uppercase tracking-[.2em] mb-4" style="color:${dotColor}">● ${data.title}</p>
+      <div class="space-y-4">${data.points.map(p => `
+        <div>
+          <p class="text-[13.5px] font-medium text-sand">${p.claim}</p>
+          <p class="text-[11px] text-gold/80 mt-0.5 mb-1">— ${p.by}</p>
+          <p class="text-[12.5px] text-sand/70 leading-relaxed">${p.detail}</p>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  $('lab-content').innerHTML = `
+    <div class="fade-swap">
+      <div class="flex flex-wrap items-baseline gap-3 mb-1">
+        <h3 class="font-serif text-2xl text-sand">${d.title}</h3>
+        <span class="text-[10.5px] uppercase tracking-[.15em] border border-teal/40 rounded-full px-2.5 py-0.5" style="color:#6fc4b2">${d.status}</span>
+      </div>
+      <p class="text-sand/65 text-[13.5px] max-w-3xl mb-6">${d.intro}</p>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        ${col(d.mainstream, 'theory-mainstream', '#6E94BD')}
+        ${col(d.alternative, 'theory-alt', '#C9A86C')}
+        ${col(d.recent, 'theory-recent', '#6fc4b2')}
+      </div>
+      <div class="glass-soft rounded-xl px-5 py-4 mt-5">
+        <p class="text-[11px] uppercase tracking-[.2em] text-gold/80 mb-1">Where it stands</p>
+        <p class="text-[13px] text-sand/80">${d.verdict}</p>
+      </div>
+    </div>`;
+}
+function openLab(debateId){
+  if (debateId) state.debate = debateId;
+  buildLab();
+  openOverlay('overlay-lab');
+}
+
+/* ---- Vault ---- */
+function buildVaultChips(){
+  const wrap = $('vault-chips');
+  wrap.innerHTML = VAULT_CATS.map(c =>
+    `<button class="chip rounded-full px-3.5 py-1.5 text-[12px] ${c.id === state.vaultCat ? 'active' : ''}" data-cat="${c.id}">${c.label}</button>`).join('');
+  wrap.querySelectorAll('[data-cat]').forEach(b => b.addEventListener('click', () => { state.vaultCat = b.dataset.cat; buildVaultChips(); renderVaultGrid(); }));
+}
+function renderVaultGrid(){
+  const q = state.vaultQuery.trim().toLowerCase();
+  const items = VAULT.filter(v =>
+    (state.vaultCat === 'all' || v.cat === state.vaultCat) &&
+    (!q || (v.title + ' ' + v.summary + ' ' + v.body.join(' ')).toLowerCase().includes(q)));
+  const catLabel = id => (VAULT_CATS.find(c => c.id === id) || {}).label || id;
+  const bm = getBookmarks();
+  $('vault-grid').innerHTML = items.length ? items.map(v => `
+    <button class="vault-card glass-soft rounded-2xl p-5 text-left flex flex-col gap-2.5" data-vault="${v.id}">
+      <div class="flex items-center justify-between">
+        <span class="text-[10.5px] uppercase tracking-[.18em] text-gold/80 border border-gold/25 rounded-full px-2.5 py-0.5">${catLabel(v.cat)}</span>
+        <span class="flex items-center gap-1.5">
+          ${v.images && v.images.length ? '<span class="text-sand/40 text-[11px]" title="Has image gallery">▣</span>' : ''}
+          ${bm.includes(v.id) ? '<span class="text-gold text-sm" aria-label="Bookmarked">★</span>' : ''}
+        </span>
+      </div>
+      <h3 class="font-serif text-[19px] leading-snug text-sand">${v.title}</h3>
+      <p class="text-[12.5px] text-sand/65 leading-relaxed">${state.family && v.kid ? v.kid : v.summary}</p>
+      <span class="text-[11.5px] text-goldlight mt-auto">Open entry →</span>
+    </button>`).join('')
+    : `<p class="text-sand/50 text-sm col-span-full py-10 text-center">No entries match — try a different term or category.</p>`;
+  document.querySelectorAll('[data-vault]').forEach(b => b.addEventListener('click', () => openVaultEntry(b.dataset.vault)));
+}
+function openVaultEntry(id){
+  const v = VAULT.find(x => x.id === id);
+  if (!v) return;
+  const bm = getBookmarks();
+  const catLabel = (VAULT_CATS.find(c => c.id === v.cat) || {}).label || v.cat;
+  const gallery = (v.images && v.images.length) ? `
+    <div class="grid ${v.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-5">
+      ${v.images.map((im, i) => `
+        <figure class="m-0">
+          <img class="gallery-img w-full h-44 object-cover rounded-xl border border-sand/10" loading="lazy"
+            src="${im.src}" alt="${im.cap.replace(/"/g, '&quot;')}" data-lightbox="${id}:${i}"
+            onerror="this.closest('figure').style.display='none'">
+          <figcaption class="text-[10.5px] text-sand/45 mt-1.5">${im.cap}</figcaption>
+        </figure>`).join('')}
+    </div>` : '';
+  openModal(`
+    <div class="p-6 md:p-8">
+      <div class="flex items-start justify-between gap-3 mb-1">
+        <span class="text-[10.5px] uppercase tracking-[.18em] text-gold/80 border border-gold/25 rounded-full px-2.5 py-0.5">${catLabel}</span>
+        <div class="flex gap-2">
+          <button id="bm-btn" class="chip rounded-full px-3 py-1 text-[12px]" aria-pressed="${bm.includes(id)}">${bm.includes(id) ? '★ Saved' : '☆ Save to My Codex'}</button>
+          <button class="modal-close glass-soft rounded-full w-8 h-8 text-sand/70 hover:text-gold" aria-label="Close">✕</button>
+        </div>
+      </div>
+      <h3 class="font-serif text-2xl md:text-[28px] text-sand mt-2">${v.title}</h3>
+      <p class="text-[13px] text-sand/60 mt-1.5 mb-5">${v.summary}</p>
+      ${state.family && v.kid ? kidCard(v.kid) : ''}
+      ${gallery}
+      <div class="rounded-xl border border-sand/10 bg-sand/[.03] p-4 mb-5">
+        <p class="text-[10.5px] uppercase tracking-[.2em] text-gold/80 mb-2">Key Facts</p>
+        <dl>${v.facts.map(f => `<div class="data-row"><dt>${f[0]}</dt><dd class="max-w-[60%]">${f[1]}</dd></div>`).join('')}</dl>
+      </div>
+      <div class="space-y-4 text-[14px] leading-relaxed text-sand/85">${v.body.map(p => `<p>${p}</p>`).join('')}</div>
+      <p class="text-[11.5px] text-sand/45 mt-6 pt-4 border-t border-sand/10"><span class="text-gold/70">Sources:</span> ${v.sources}</p>
+    </div>`);
+  const bmBtn = document.getElementById('bm-btn');
+  bmBtn.addEventListener('click', () => {
+    let b = getBookmarks();
+    if (b.includes(id)){ b = b.filter(x => x !== id); showToast('Removed from My Codex'); }
+    else { b.push(id); showToast('Saved to My Codex ★'); }
+    setBookmarks(b);
+    bmBtn.textContent = b.includes(id) ? '★ Saved' : '☆ Save to My Codex';
+    bmBtn.setAttribute('aria-pressed', String(b.includes(id)));
+    renderVaultGrid();
+  });
+  document.querySelectorAll('[data-lightbox]').forEach(img => img.addEventListener('click', () => openLightbox(img.src, img.alt)));
+}
+
+/* ---- lightbox ---- */
+function openLightbox(src, cap){
+  $('lightbox-img').src = src;
+  $('lightbox-img').alt = cap || '';
+  $('lightbox-cap').textContent = cap || '';
+  $('lightbox').classList.add('open');
+}
+function closeLightbox(){ $('lightbox').classList.remove('open'); }
+
+/* ---- overlays & modal ---- */
+let lastFocus = null;
+function openOverlay(id){
+  closeOverlays();
+  lastFocus = document.activeElement;
+  const el = $(id);
+  el.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  const closer = el.querySelector('.overlay-close');
+  if (closer) closer.focus();
+  updateNavActive(id === 'overlay-lab' ? 'lab' : 'vault');
+}
+function closeOverlays(){
+  let any = false;
+  document.querySelectorAll('.overlay.open').forEach(el => { el.classList.remove('open'); any = true; });
+  if (any){
+    document.body.style.overflow = '';
+    updateNavActive('explorer');
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  return any;
+}
+function openModal(html){
+  $('modal-body').innerHTML = html;
+  $('modal').classList.add('open');
+  const c = $('modal').querySelector('.modal-close');
+  if (c){ c.addEventListener('click', closeModal); c.focus(); }
+}
+function closeModal(){ $('modal').classList.remove('open'); }
+
+function updateNavActive(which){
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    const on = b.dataset.nav === which;
+    b.classList.toggle('text-gold', on);
+    b.classList.toggle('bg-gold/10', on);
+    b.classList.toggle('text-sand/70', !on);
+  });
+}
+
+function openAbout(){
+  openModal(`
+    <div class="p-6 md:p-8">
+      <div class="flex items-start justify-between gap-3">
+        <h3 class="font-serif text-2xl text-sand">About the Kemet Codex</h3>
+        <button class="modal-close glass-soft rounded-full w-8 h-8 text-sand/70 hover:text-gold" aria-label="Close">✕</button>
+      </div>
+      <div class="space-y-4 text-[13.5px] leading-relaxed text-sand/80 mt-4">
+        <p>The Codex is a living digital museum: scholarly rigor with open-minded curiosity. It presents the <strong class="text-lapislight">mainstream archaeological consensus</strong>, the most compelling <strong class="text-goldlight">alternative hypotheses</strong> (Hancock, Schoch, Bauval, Biondi, Houdin and others), and the <strong style="color:#6fc4b2">latest scientific findings</strong> — always labeled, always attributed, never blended.</p>
+        <p><strong class="text-sand">How to explore:</strong> orbit and zoom (drag / pinch) · switch between the Great Pyramid and the Sphinx up top · click glowing markers · drag the timeline through fifty centuries · try Cutaway and the Fly-through · in <strong class="text-goldlight">Night &amp; Stars</strong> the sky is a real star catalogue precessed to each era — drag the timeline at night to watch the pole star change and the equinoxes drift through the zodiacal Ages · paint the Sphinx walls in the Erosion Lab · toggle ✦ Family for kid-friendly explanations · open the Theory Lab to weigh the debates · search the Vault for deep dives.</p>
+        <p class="text-[12px] text-sand/55">Star positions use the J2000 bright-star catalogue with accumulated general precession and the obliquity of date — accurate to about a degree across the Codex's 7,000-year span. Proper motion is not modelled.</p>
+        <p>Content is data-driven: this build ships the <em>Giza Plateau</em> civilization pack (packs/giza.js). New sites — Göbekli Tepe, the Andes — can be added as packs without touching the engine. Sample content should be expanded with expert review before public deployment. Measurements follow published surveys (Petrie 1883; Cole 1925; Dash Foundation 2015–2017; Nature 2017/2023). Photographs are served from Wikimedia Commons.</p>
+        <p class="text-[12px] text-sand/50">Educational exploration, not endorsement. Installable as an app — your browser may offer “Install Kemet Codex.”</p>
+      </div>
+    </div>`);
+}
+
+/* ============================ INIT ============================ */
+
+function bindUI(){
+  $('enter-btn').addEventListener('click', enterCodex);
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => applyPreset(b.dataset.preset)));
+  $('view-exterior').addEventListener('click', () => applyView('exterior'));
+  $('view-cutaway').addEventListener('click', () => applyView('cutaway'));
+  $('view-night').addEventListener('click', toggleNight);
+  document.querySelectorAll('[data-skymoment]').forEach(b => b.addEventListener('click', () => setSkyMoment(b.dataset.skymoment)));
+  $('ctl-min').addEventListener('click', () => setMin('ctl', true));
+  $('ctl-restore').addEventListener('click', () => setMin('ctl', false));
+  $('tl-min').addEventListener('click', () => setMin('tl', true));
+  $('tl-restore').addEventListener('click', () => setMin('tl', false));
+  $('panel-min').addEventListener('click', () => setMin('panel', true));
+  $('panel-restore').addEventListener('click', () => setMin('panel', false));
+  $('tour-btn').addEventListener('click', () => { tour ? endTour() : startTour(); });
+  $('family-btn').addEventListener('click', toggleFamily);
+  $('panel-back').addEventListener('click', clearHotspot);
+  $('panel-toggle').addEventListener('click', () => openPanelSheet(!document.body.classList.contains('panel-open')));
+  $('panel-handle').addEventListener('click', () => openPanelSheet(false));
+  $('nav-home').addEventListener('click', () => { closeOverlays(); });
+  document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => {
+    const w = b.dataset.nav;
+    if (w === 'explorer') closeOverlays();
+    else if (w === 'lab') openLab();
+    else if (w === 'vault'){ buildVaultChips(); renderVaultGrid(); openOverlay('overlay-vault'); }
+    else if (w === 'about') openAbout();
+  }));
+  document.querySelectorAll('.overlay-close').forEach(b => b.addEventListener('click', closeOverlays));
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => { state.tab = b.dataset.tab; renderPanel(); }));
+  $('modal-backdrop').addEventListener('click', closeModal);
+  $('lightbox').addEventListener('click', closeLightbox);
+  $('vault-search').addEventListener('input', e => { state.vaultQuery = e.target.value; renderVaultGrid(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){
+      if ($('lightbox').classList.contains('open')) closeLightbox();
+      else if ($('modal').classList.contains('open')) closeModal();
+      else if (tour) endTour();
+      else if (!closeOverlays() && document.body.classList.contains('panel-open')) openPanelSheet(false);
+    }
+  });
+}
+
+function enterCodex(){
+  state.entered = true;
+  $('hero').classList.add('hidden-out');
+  $('app').classList.remove('veiled');
+  if (webglOK){
+    controls.autoRotate = false;
+    tweenCamera(new THREE.Vector3(390, 230, 410), new THREE.Vector3(0, 55, 0), 1600);
+  }
+  const saved = loadSession();
+  if (saved){
+    if (typeof saved.era === 'number' && saved.era !== state.era) setEra(saved.era, true);
+    if (saved.monument && saved.monument !== state.monument && MONUMENTS.some(m => m.id === saved.monument)) setMonument(saved.monument, { noFly: true });
+    if (saved.view === 'cutaway') applyView('cutaway');
+    if (saved.family && !state.family) toggleFamily();
+    if (saved.hotspot && (activeMon().hotspots || []).some(h => h.id === saved.hotspot)){ state.hotspot = saved.hotspot; renderPanel(); }
+    if (saved.min){ setMin('ctl', !!saved.min.ctl); setMin('tl', !!saved.min.tl); setMin('panel', !!saved.min.panel); }
+  }
+  saveSession();
+  setTimeout(() => { if (window.innerWidth < 1024) showToast('Tap ⓘ Details for the knowledge panel'); }, 1800);
+}
+
+/* Shareable deep links, e.g. ?enter=1&monument=sphinx&era=6&view=cutaway
+   &night=1&family=1&erosion=rain&hotspot=sx-face&preset=front */
+function applyDeepLink(){
+  const q = new URLSearchParams(location.search);
+  if (!q.has('enter')) return;
+  $('hero').style.display = 'none';
+  $('app').classList.remove('veiled');
+  state.entered = true;
+  if (webglOK) controls.autoRotate = false;
+  if (q.get('family') === '1' && !state.family) toggleFamily();
+  const mon = q.get('monument');
+  if (mon && MONUMENTS.some(m => m.id === mon) && mon !== state.monument) setMonument(mon, { noFly: true });
+  const era = q.get('era');
+  if (era !== null && ERAS[+era]) setEra(+era, true);
+  if (q.get('view') === 'cutaway') applyView('cutaway');
+  if (q.get('sky')) setSkyMoment(q.get('sky'));
+  if (q.get('night') === '1' && !state.night) toggleNight();
+  const ero = q.get('erosion');
+  if (ero && erosionTex[ero]) applyErosion(ero);
+  const hs = q.get('hotspot');
+  if (hs) selectHotspot(hs, true);
+  const preset = q.get('preset');
+  if (preset) applyPreset(preset);
+  if (webglOK){ // land on the target look instantly — no mid-lerp screenshots
+    ['casing','cap','ghost','sand','sunInt','stars','dust'].forEach(p => visCur[p] = visTgt[p]);
+    visCur.sun.copy(visTgt.sun); visCur.fog.copy(visTgt.fog); visCur.sunPos.copy(visTgt.sunPos);
+  }
+}
+
+function init(){
+  initScene();
+  buildTimeline();
+  renderMonumentSwitch();
+  updateTourBtn();
+  bindUI();
+  computeVisTarget();
+  renderPanel();
+  buildLab();
+  buildVaultChips();
+  renderVaultGrid();
+  const saved = loadSession();
+  if (saved && saved.visited) $('enter-btn').textContent = 'Return to the Codex';
+  if (webglOK){
+    ['casing','cap','ghost','sand','sunInt','stars','dust'].forEach(p => visCur[p] = visTgt[p]);
+    visCur.sun.copy(visTgt.sun); visCur.fog.copy(visTgt.fog); visCur.sunPos.copy(visTgt.sunPos);
+  }
+  applyDeepLink();
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+init();
+</script>
+</body>
+</html>

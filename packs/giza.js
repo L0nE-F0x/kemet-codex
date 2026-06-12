@@ -1,0 +1,432 @@
+/* =====================================================================
+   KEMET CODEX — Civilization Pack: GIZA PLATEAU
+   ---------------------------------------------------------------------
+   A pack is pure data + light 3D configuration. The engine in index.html
+   renders whatever packs register themselves on window.KEMET.packs.
+   To create a new civilization (Göbekli Tepe, the Andes…), copy this
+   file's shape and register a new pack — no engine changes required for
+   data, panels, debates or vault content. Monument geometry is chosen by
+   `threeConfig.model`; add a builder in the engine (or set `gltfUrl` to
+   load a real scanned model once one is available).
+   ===================================================================== */
+(function(){
+'use strict';
+window.KEMET = window.KEMET || { packs: [] };
+
+const WIKI = name => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + name + '?width=1000';
+
+window.KEMET.packs.push({
+id: 'giza',
+name: 'Giza Plateau',
+tagline: 'Kemet — the Black Land',
+site: { lat: 29.979, lon: 31.134 }, // Giza — drives the engine's sky computation
+
+/* ============================ ERAS ============================ */
+eras: [
+  { id:'predynastic', label:'Predynastic', date:'c. 5000 BCE', year:-5000,
+    tagline:'The plateau before the pyramids',
+    context:"No pyramid yet — only wind, sand and the river. Farming villages line the Nile (Badari, then Naqada cultures) while the Sahara, still green in living memory, dries out and pushes cattle herders toward the valley. At Nabta Playa, far to the south, a stone circle already tracks the solstice.",
+    kid:"Imagine this whole place with nothing on it — just desert, wind, and the great river nearby. The pyramid builders' great-great-great… (×100!) grandparents are just settling down to farm.",
+    points:["Nile farming cultures: Badari, Naqada I–III","Nabta Playa stone circle (c. 7,000+ years old) shows early sky-watching","Alternative view: Hancock places a lost civilization's end c. 9600 BCE — and Schoch would carve the Sphinx in this deep past"],
+    visual:{ pyramid:false, casing:0, cap:0, ghost:.16, sphinxSand:0, sunH:.14, sunInt:.95, sun:'#ffc18a', fog:'#8a5638', dust:.5, stars:0,
+      sky:'linear-gradient(180deg,#0d1326 0%,#3b2f4d 45%,#9c5b35 100%)' } },
+  { id:'early-dynastic', label:'Early Dynastic', date:'c. 3100 BCE', year:-3100,
+    tagline:'Unification — and still no pyramid',
+    context:"Narmer unifies Upper and Lower Egypt; writing, kingship and monumental mudbrick tombs appear at Abydos and Saqqara. The Giza plateau waits. Within four centuries, Djoser's architect Imhotep will stack mastabas into the first step pyramid — the rehearsal for what rises here.",
+    kid:"Egypt just became one big kingdom with one king — and people invented hieroglyphic writing! Still no pyramids here though. The architects are warming up.",
+    points:["Narmer Palette records unification of the Two Lands","Hieroglyphic writing and the royal court emerge","Alternative view: Zep Tepi — texts of a remote ‘First Time’ read by Bauval/Hancock as cultural memory of an earlier age"],
+    visual:{ pyramid:false, casing:0, cap:0, ghost:.24, sphinxSand:0, sunH:.22, sunInt:1.05, sun:'#ffcf9a', fog:'#7c5535', dust:.45, stars:0,
+      sky:'linear-gradient(180deg,#101a33 0%,#41466b 50%,#c4763d 100%)' } },
+  { id:'old-kingdom', label:'Old Kingdom', date:'c. 2500 BCE', year:-2500,
+    tagline:'The plateau complete — gleaming and new',
+    context:"Khufu's pyramid stands finished in perhaps 20–27 years: a mountain of polished white Tura limestone, possibly crowned in gold, visible for tens of kilometres. His successors Khafre and Menkaure raise their own beside it, and the Sphinx watches the eastern horizon. A purpose-built workers' city feeds thousands of rotating labourers on bread, beer and beef.",
+    kid:"Ta-da! Everything is brand new and SHINY — the pyramids are covered in polished white stone that flashes in the sun like a mirror, and the Sphinx is freshly carved. Thousands of workers eat bread, drink beer, and build mountains.",
+    points:["Khufu c. 2560 BCE; Khafre and the Sphinx c. 2550–2530; Menkaure c. 2510","Workers' city at Heit el-Ghurab: bakeries, breweries, dorms — paid crews, not slaves","Merer's papyrus logbook (found 2013) details Tura limestone shipments"],
+    visual:{ pyramid:true, casing:1, cap:1, ghost:0, sphinxSand:0, sunH:.42, sunInt:1.45, sun:'#ffd9a8', fog:'#b07a45', dust:.65, stars:0,
+      sky:'linear-gradient(180deg,#16243f 0%,#5a6f9e 45%,#e8b36a 100%)' } },
+  { id:'middle-kingdom', label:'Middle Kingdom', date:'c. 2000 BCE', year:-2000,
+    tagline:'Already ancient — five centuries old',
+    context:"Egypt reunifies after the First Intermediate Period. Giza's pyramids are already older to these Egyptians than the Renaissance is to us. Classical literature flourishes; later kings quarry older monuments even as mortuary cults tend the old kings' memories. Sand begins creeping over the Sphinx.",
+    kid:"The pyramids are already 500 years old — ANCIENT even to the ancient Egyptians! The desert sand is slowly starting to bury the Sphinx like a blanket.",
+    points:["Pyramid already ~500 years old; cults maintain the royal memory","Golden age of Egyptian literature (Tale of Sinuhe)","Casing still largely intact and dazzling"],
+    visual:{ pyramid:true, casing:1, cap:1, ghost:0, sphinxSand:.55, sunH:.5, sunInt:1.25, sun:'#ffe0b0', fog:'#9a7148', dust:.4, stars:0,
+      sky:'linear-gradient(180deg,#152340 0%,#4d6391 50%,#d9a05e 100%)' } },
+  { id:'new-kingdom', label:'New Kingdom', date:'c. 1450 BCE', year:-1450,
+    tagline:'Empire age — Giza as sacred heritage',
+    context:"Egypt rules an empire. Prince Thutmose IV, napping in the Sphinx's shadow, dreams the god promises him the throne if he clears the sand — his Dream Stele still sits between its paws. Giza is now a place of pilgrimage, royal sport and thousand-year-old wonder.",
+    kid:"A prince fell asleep next to the half-buried Sphinx and dreamed it spoke to him: ‘Clear away my sand and you'll be king!’ He did — and he was! His stone ‘thank-you note’ still sits between its paws.",
+    points:["Thutmose IV's Dream Stele (c. 1401 BCE) — earliest ‘restoration’ record","Pyramid is already ~1,100 years old","Royal chariot training grounds on the plateau"],
+    visual:{ pyramid:true, casing:.97, cap:1, ghost:0, sphinxSand:.18, sunH:.62, sunInt:1.3, sun:'#fff0cd', fog:'#8d6b4a', dust:.35, stars:0,
+      sky:'linear-gradient(180deg,#1b2c4d 0%,#5d7bb0 50%,#e7c084 100%)' } },
+  { id:'late-period', label:'Late Period', date:'c. 600 BCE', year:-600,
+    tagline:'Herodotus and the birth of pyramid lore',
+    context:"Saite kings revive archaic styles; Egypt is ancient even to itself. Around 450 BCE the Greek traveller Herodotus visits and writes down priests' tales — including the myth of 100,000 slaves that will distort the story for 2,400 years. The casing still mostly gleams; the Sphinx sinks back into the sand.",
+    kid:"A Greek tourist named Herodotus visited and wrote down amazing stories the guides told him — some true, some VERY made-up. His ‘100,000 slaves’ story fooled people for over 2,000 years!",
+    points:["Herodotus' account (c. 450 BCE): vivid, influential, unreliable","Saite renaissance deliberately imitates Old Kingdom art","The ‘100,000 slaves’ myth begins here — modern evidence contradicts it"],
+    visual:{ pyramid:true, casing:.9, cap:0, ghost:0, sphinxSand:.75, sunH:.38, sunInt:1.1, sun:'#ffd49b', fog:'#8a6244', dust:.45, stars:0,
+      sky:'linear-gradient(180deg,#121c33 0%,#46527a 50%,#c08552 100%)' } },
+  { id:'medieval', label:'Medieval', date:'c. 1350 CE', year:1350,
+    tagline:'The casing comes off',
+    context:"Caliph al-Ma'mun's workers tunnelled in around 820 CE — the entrance tourists still use. After the great earthquake of 1303 CE loosened the casing, Cairo's builders stripped the polished Tura limestone for mosques and fortifications, including Sultan Hasan's mosque. The stepped core we know emerges. The Sphinx is a head in a sea of sand.",
+    kid:"After a huge earthquake shook the shiny white stones loose, builders carted them off to build mosques in Cairo. The pyramid lost its gleaming coat — and the poor Sphinx is buried right up to its neck!",
+    points:["Al-Ma'mun's tunnel, c. 820 CE","1303 earthquake; casing quarried for Cairo's mosques","Medieval Arab scholars record measurements and legends"],
+    visual:{ pyramid:true, casing:.1, cap:0, ghost:0, sphinxSand:.95, sunH:.3, sunInt:1.0, sun:'#f7c388', fog:'#7d5640', dust:.55, stars:0,
+      sky:'linear-gradient(180deg,#171527 0%,#54405a 50%,#b96a3e 100%)' } },
+  { id:'modern', label:'Modern', date:'Today', year:2026,
+    tagline:'Muons, satellites and open questions',
+    context:"Stripped to its core at 138.75 m, the pyramid is now read by cosmic rays, lasers and satellites. ScanPyramids' muography revealed the Big Void (2017) and a hidden north-face corridor (2023). The Sphinx, fully excavated only in 1936, faces the sunrise clear of sand for the first sustained stretch in millennia.",
+    kid:"Today scientists ‘X-ray’ the pyramid with invisible space particles called muons — and they keep finding hidden rooms nobody has entered in 4,500 years! The Sphinx is finally fully dug out of the sand.",
+    points:["ScanPyramids: Big Void (2017), North Face Corridor (2023)","Khufu branch of the Nile reconstructed (PNAS, 2022)","Sphinx fully excavated 1925–1936 (Baraize); Grand Egyptian Museum opened beside the plateau"],
+    visual:{ pyramid:true, casing:0, cap:0, ghost:0, sphinxSand:0, sunH:.72, sunInt:1.35, sun:'#fff3da', fog:'#94755a', dust:.3, stars:0,
+      sky:'linear-gradient(180deg,#10203f 0%,#3f6796 50%,#d8b683 100%)' } }
+],
+
+/* ============================ MONUMENTS ============================ */
+monuments: [
+{
+  id: 'great-pyramid',
+  label: 'Great Pyramid',
+  icon: '◮',
+  name: "Great Pyramid of Khufu",
+  sub: "Akhet-Khufu · “Horizon of Khufu” · Giza Plateau, Egypt",
+  threeConfig: { model: 'khufu', origin: [0, 0, 0], gltfUrl: null },
+  presets: {
+    aerial: { p:[440,360,440], t:[0,30,0] },
+    ground: { p:[275,16,320], t:[0,75,0] },
+    front:  { p:[40,70,-460], t:[0,60,0] }
+  },
+  tour: { cutaway:true, dur:18, label:'Fly Inside', points:[
+    [180,80,-340],[40,26,-180],[10,17,-122],[2,8,-96],[0,13,-80],[0,20,-56],
+    [0,27,-36],[0,34,-16],[3,42,0],[6,46,8],[30,52,40],[140,90,170] ] },
+  measureChips: [
+    { key:'gp-base', label:'Base · 230 m' },
+    { key:'gp-height', label:'Height · 146 m' },
+    { key:'gp-slope', label:'Slope · 51.8°' } ],
+  overview: "For 3,800 years this was the tallest structure on Earth. Roughly 2.3 million blocks of limestone and granite — about 5.75 million tonnes — rise from a base levelled to within 2.1 centimetres and aligned to true north within about 1/15 of a degree. Mainstream Egyptology dates it to the reign of Khufu, c. 2580–2560 BCE, built in roughly two decades by rotating crews of paid labourers. Alternative researchers ask whether parts of the site, or the knowledge behind it, are older. Click a glowing marker to explore, and drag the timeline to watch fifty centuries pass.",
+  kid: "This was the TALLEST building on Earth for almost 4,000 years — taller than a 40-storey skyscraper, made of about 2.3 million giant stone blocks. If you placed one block every 3 minutes, all day, every day… it would still take 20 years. Click the glowing dots to peek inside!",
+  measurements: [
+    ["Original height", "146.59 m · 280 royal cubits"],
+    ["Height today", "138.75 m (summit courses lost)"],
+    ["Mean base side", "230.363 m · 440 royal cubits"],
+    ["Slope angle", "51° 50′ 40″ (seked of 5½ palms)"],
+    ["Alignment to true north", "within ≈ 3.4 arcminutes"],
+    ["Base levelled to", "≈ 2.1 cm across 5.3 hectares"],
+    ["Estimated blocks", "≈ 2.3 million · avg ≈ 2.5 t"],
+    ["Total mass", "≈ 5.75 million tonnes"],
+    ["Volume", "≈ 2.58 million m³"],
+    ["Royal cubit", "0.5236 m (7 palms × 4 fingers)"]
+  ],
+  mainstream: "Tomb of pharaoh Khufu, 4th Dynasty, c. 2580–2560 BCE. Supported by workers'-gang graffiti naming Khufu inside the relieving chambers, the excavated builders' city and bakeries at Heit el-Ghurab (Mark Lehner / AERA), the builders' cemetery (Zahi Hawass), and the Wadi al-Jarf papyri (2013) — the logbook of inspector Merer, who shipped Tura limestone to “Akhet-Khufu” in Khufu's 26th–27th regnal year.",
+  alternative: "Graham Hancock and Robert Bauval argue the Giza plan encodes a far older epoch (the “First Time”, c. 10,500 BCE) via the Orion correlation, and that a lost civilization seeded its science. Christopher Dunn reads the precision as machine work. Geologist Robert Schoch's water-erosion case for an older Sphinx is often extended to question the plateau's whole chronology. None of these are accepted by mainstream Egyptology — but each points at real data worth examining.",
+  recent: "ScanPyramids muography found the 30 m “Big Void” above the Grand Gallery (Nature, 2017) and confirmed a hidden corridor behind the north-face chevrons (2023). A 2022 PNAS study reconstructed the lost “Khufu branch” of the Nile that floated stone to the plateau. Radar (SAR) claims of deep structures beneath the plateau (Biondi & Malanga, 2022–2025) remain unverified and widely criticized.",
+  debate: 'construction',
+  hotspots: [
+    { id:'apex', name:'Summit & Missing Pyramidion', sub:'The lost capstone — 8 metres gone', pos:[0,150,0], dist:230, interior:false, debate:'construction',
+      overview:"The pyramid originally rose 146.59 m — 280 royal cubits — and stayed the tallest human-made structure on Earth until c. 1311 CE. Today it ends in a ragged platform at 138.75 m: the top courses and the pyramidion (capstone) are gone. Surviving pyramidia from other pyramids, like Amenemhat III's polished black basalt at the Cairo Museum, hint at what crowned it — possibly gilded to throw the first light of dawn.",
+      kid:"The very tippy-top is missing! There used to be a special pointy capstone up there — maybe covered in gold so it flashed with the first sunlight every morning. Nobody knows where it went.",
+      measurements:[["Original height","146.59 m · 280 cubits"],["Today","138.75 m"],["Missing","≈ 8 m of courses + pyramidion"],["Survey mast","marks the original apex point"]],
+      mainstream:"Egyptologists hold the pyramid was almost certainly finished and capped; the summit and casing were quarried away in the medieval period. The benben capstone symbolized the primeval mound and the sun's first light.",
+      alternative:"Speculative traditions claim a capstone of solid gold, or that the pyramid was deliberately left uncapped. Fringe ‘energy device’ readings of the missing apex have no physical evidence — included here only because visitors will encounter them online.",
+      recent:"Photogrammetry has documented centuries of summit graffiti; drone surveys keep precise track of the remaining 203 courses." },
+    { id:'entrance', name:"Original Entrance & Ma'mun's Tunnel", sub:'North face, 17 m up — two doorways, 3,400 years apart', pos:[10,22,-112], dist:200, interior:false, debate:'hidden-chambers',
+      overview:"The true entrance sits about 17 m above the base on the north face, offset ≈ 7.3 m east of the centreline, sheltered by massive gabled limestone beams. Visitors today enter lower down, through the tunnel attributed to Caliph al-Ma'mun's expedition of c. 820 CE, which forced its way in and rejoined the original passages.",
+      kid:"There are TWO doors: the secret original one high up (hidden so well that treasure hunters missed it), and a tunnel that a caliph's crew chiselled through solid stone 1,200 years ago. Tourists still use the caliph's tunnel today!",
+      measurements:[["Height above base","≈ 17 m"],["Offset from centreline","≈ 7.29 m east"],["Descending passage slope","26° 31′"],["Ma'mun's tunnel","c. 820 CE"]],
+      mainstream:"The offset entrance is read as a security measure or a consequence of the internal layout. The descending passage points toward the region of the ancient circumpolar stars — ‘the imperishable ones’ of royal afterlife texts.",
+      alternative:"Alternative writers emphasize the passage's precise stellar pointing (toward Thuban, the pole star of c. 2500 BCE) as evidence of sophisticated astronomical design — a point many mainstream scholars actually share, while disagreeing on its implications.",
+      recent:"In 2023 ScanPyramids confirmed a 9 m corridor hidden behind the north-face chevron blocks just above this entrance — imaged by muography, then photographed by endoscope (Nature Communications, 2023). Its purpose is still debated." },
+    { id:'kings-chamber', name:"King's Chamber", sub:'A granite vault 800 km from its quarry', pos:[6,46,8], dist:280, interior:true, debate:'hidden-chambers',
+      overview:"Built entirely of red Aswan granite shipped ~800 km down the Nile, the chamber measures exactly 20 × 10 royal cubits (10.47 × 5.23 m). Nine granite ceiling beams — the heaviest around 60+ tonnes — carry five ‘relieving chambers’ above. There, builders' gangs left red-ochre graffiti naming Khufu — key dating evidence. The lidless granite sarcophagus is wider than the passages: it was placed during construction.",
+      kid:"This room is built from giant blocks of red granite that came from 800 km away — each ceiling beam weighs as much as 10 school buses! The stone coffin inside is wider than the door… so the room was built AROUND it, like a ship in a bottle.",
+      measurements:[["Floor plan","10.479 × 5.234 m (20 × 10 cubits)"],["Height","5.852 m"],["Ceiling beams","9 granite beams, up to ≈ 63 t"],["Granite source","Aswan, ≈ 800 km upstream"]],
+      mainstream:"Khufu's burial chamber. The gang graffiti (‘Friends of Khufu’), 4th-Dynasty context, and sarcophagus identify it as the tomb's heart, looted in antiquity.",
+      alternative:"Christopher Dunn reads the chamber's acoustics and precision as components of a ‘power plant.’ Zecharia Sitchin claimed Howard Vyse forged the graffiti in 1837 — countered decisively: the marks continue into joints and behind blocks no forger could reach, and match quarry marks found across Egypt.",
+      recent:"Thermal scans (2016) flagged anomalies near the chamber level; the 2017 Big Void sits diagonally above. Both keep engineering questions about this part of the pyramid very much alive." },
+    { id:'queens-chamber', name:"Queen's Chamber", sub:'A misnamed room with sealed star shafts', pos:[0,24,2], dist:280, interior:true, debate:'orion',
+      overview:"Misnamed by early Arab explorers — no queen was buried here. The chamber sits precisely on the pyramid's east–west centreline, with a corbelled niche in its east wall. Its two narrow shafts stop inside the masonry, sealed by small limestone ‘doors’ with copper pins — found by Gantenbrink's robot in 1993 and photographed beyond by the Djedi robot in 2011: a small void, red-ochre marks, and a second blocking stone.",
+      kid:"No queen was ever buried here — explorers just guessed wrong and the name stuck! Two skinny tunnels in the walls are blocked by tiny stone ‘doors’ with copper handles. Robots have peeked behind one… and found ANOTHER door. What's behind it? Nobody knows yet!",
+      measurements:[["Floor plan","5.75 × 5.23 m"],["Gabled ceiling apex","6.26 m"],["Niche depth","≈ 1 m, corbelled"],["Shafts","≈ 20 cm square, sealed"]],
+      mainstream:"Purpose debated within Egyptology: a serdab for a ka-statue, an abandoned burial chamber, or a ritual room. The shafts are read as symbolic soul-passages, deliberately left sealed.",
+      alternative:"Bauval targets the shafts at Sirius (Isis) and Kochab as part of a stellar design; the copper-pinned ‘doors’ fuel hopes of hidden rooms beyond. Hancock features this chamber prominently as unfinished business of Egyptology.",
+      recent:"Djedi (2011) returned the best images yet behind the first ‘door.’ Proposals for a next-generation micro-robot are recurrent — the void beyond the second blocking stone has never been seen." },
+    { id:'grand-gallery', name:'Grand Gallery', sub:'A 47-metre corbelled masterpiece', pos:[0,34,-16], dist:280, interior:true, debate:'hidden-chambers',
+      overview:"The finest interior space of the Old Kingdom: 46.68 m long, 8.74 m high, climbing at 26° 16′ under seven corbelled courses of polished limestone. Along both side ramps run 27 pairs of slots whose purpose is still argued — most likely a timber framework for storing and lowering the granite plug-blocks that sealed the ascending passage.",
+      kid:"Picture a stone hallway as tall as a 3-storey house, climbing uphill inside the pyramid, with walls that lean inward as they rise. Your voice echoes amazingly in here. It might have been a giant ‘garage’ for the stone plugs that sealed the tomb!",
+      measurements:[["Length","46.68 m"],["Height","8.74 m (7 corbels)"],["Slope","26° 16′"],["Ramp slots","27 pairs"]],
+      mainstream:"An engineering staging space: it stored the granite plugs and gave workmen headroom to manoeuvre them, doubling as a processional ascent to the burial chamber.",
+      alternative:"Jean-Pierre Houdin's internal-ramp model uses the gallery as a counterweight trolley track to hoist the King's Chamber's 60-tonne beams. Dunn hears a resonance hall. Both treat the slots as machine mounts.",
+      recent:"The 2017 ‘Big Void’ — 30+ m long, similar cross-section — lies directly above the gallery. Whether it's a relieving structure, a construction space, or something else is one of Egyptology's freshest open questions." },
+    { id:'subterranean', name:'Subterranean Chamber', sub:'An unfinished room 27 m down in bedrock', pos:[0,-24,0], dist:300, interior:true, debate:'hidden-chambers',
+      overview:"At the bottom of a 105 m descending passage, cut ~27 m below the plateau into living bedrock, lies a rough, unfinished chamber about 14 × 8 m — floor like frozen surf, a blind dead-end corridor, and a square pit. It is the pyramid's least visited and strangest space.",
+      kid:"Deep, deep underground — below the whole pyramid — there's a rough, spooky, HALF-FINISHED room carved into solid rock. The builders just… stopped. Maybe they changed their plans. It's the pyramid's biggest ‘why?’",
+      measurements:[["Depth below plateau","≈ 27 m (bedrock)"],["Chamber plan","≈ 14 × 8.1 m"],["Descending passage","≈ 105 m at 26° 31′"],["State","clearly unfinished"]],
+      mainstream:"Most read it as the original burial chamber, abandoned when plans moved upward (Borchardt's sequence), or as a deliberately rough netherworld (Duat) chamber beneath the tomb.",
+      alternative:"Some alternative writers propose it predates the pyramid — a remnant of an older sacred site the 4th Dynasty built over. No stratigraphic evidence supports this so far, but the idea recurs from Hancock to online researchers.",
+      recent:"ScanPyramids continues to survey the lower pyramid. The 2022–2025 SAR radar claims (Biondi & Malanga) of deep shafts and chambers under the plateau — heavily criticized and unverified — would, if ever confirmed, transform how this chamber is read." },
+    { id:'shafts', name:'The Star Shafts', sub:'Four narrow channels aimed at the sky of 2500 BCE', pos:[0,74,-56], dist:200, interior:false, debate:'orion',
+      overview:"Four shafts about 20 cm square run from the King's and Queen's chambers through the masonry. The King's pair exit the faces; the Queen's pair stop at the sealed ‘doors.’ Around 2500 BCE they pointed at: Alnitak in Orion's Belt (King's south), Thuban the pole star (King's north), Sirius (Queen's south) and Kochab (Queen's north) — first computed by Badawy & Trimble (1964), popularized by Bauval.",
+      kid:"Four skinny tunnels point out of the pyramid like telescopes — straight at special stars! 4,500 years ago they aimed at Orion's Belt and the North Star of that time. Ancient Egyptians believed the king's spirit could fly up them into the sky.",
+      measurements:[["Cross-section","≈ 20 × 20 cm"],["King's south shaft","≈ 45° — Alnitak (Orion)"],["King's north shaft","≈ 32° 28′ — Thuban"],["Queen's shafts","Sirius / Kochab — sealed"]],
+      mainstream:"Ritual passages for the king's soul: north to the ‘imperishable’ circumpolar stars, south to Orion (the god Sah/Osiris) and Sirius (Sopdet/Isis) — consistent with the Pyramid Texts. The old label ‘air shafts’ is obsolete.",
+      alternative:"Bauval: the shafts are a deliberate stellar clock, and with the Giza–Orion ground plan they encode the epoch of 10,500 BCE (with Hancock, The Message of the Sphinx). Critics reply that the 10,500 BCE ‘match’ requires an inverted sky-map and cherry-picked stars.",
+      recent:"Laser scanning has refined the shaft angles; engineering studies debate how (and whether) builders sighted stars through bent shafts during construction — a genuine open problem." },
+    { id:'base', name:'Foundation & Precision', sub:'The numbers that launched a thousand theories', pos:[118,4,-118], dist:230, interior:false, debate:'construction',
+      overview:"The four sides average 230.363 m and differ by mere centimetres; the whole footprint is aligned to true north within about 3.4 arcminutes and levelled to ~2.1 cm. Perimeter ÷ height ≈ 2π — a property that falls naturally out of the Egyptian seked slope system (rise of 1 cubit per 5½ palms run) without anyone ‘knowing’ π. A few original Tura casing stones survive at the north base, with joints Petrie measured in fractions of a millimetre.",
+      kid:"Here's the mind-blowing part: each side is about 230 metres long, and they're all the same length to within a few CENTIMETRES — about the width of your finger! And the whole pyramid points almost perfectly north. They did it with string, wood and the stars.",
+      measurements:[["Mean side","230.363 m · 440 cubits"],["Side-to-side variation","centimetre-scale (Dash survey 2015)"],["Alignment","≈ 3.4′ west of true north"],["Levelling","≈ 2.1 cm"],["Casing joints","≈ 0.5 mm (Petrie, 1883)"]],
+      mainstream:"Achievable with Bronze Age methods: stellar simultaneous-transit alignment (Kate Spence, Nature 2000) or solar shadow methods (Glen Dash), water- or trench-levelling, and obsessive surveying. The precision is extraordinary craft, not anachronism.",
+      alternative:"Hancock and others cite the precision as beyond a society ‘fresh out of the Stone Age,’ implying inherited knowledge. Davidovits' geopolymer hypothesis (cast-in-place stone) would explain tight joints — but geology of the quarries and casing contradicts it.",
+      recent:"The Glen Dash Foundation surveys (2015–2017) produced the best-ever base measurements, confirming a slight, consistent counterclockwise rotation from true north — itself a clue to the original survey method." }
+  ]
+},
+{
+  id: 'sphinx',
+  label: 'Sphinx',
+  icon: '𓁛',
+  name: "Great Sphinx of Giza",
+  sub: "Horemakhet · “Horus of the Horizon” · carved from living bedrock",
+  threeConfig: { model: 'sphinx', origin: [345, 0, 430], gltfUrl: null }, // ≈347 m E, 432 m S of Khufu's centre (survey-derived)
+  presets: {
+    aerial: { p:[115,85,115], t:[0,8,0] },
+    ground: { p:[100,7,60], t:[5,12,0] },
+    front:  { p:[95,15,2], t:[24,15,0] }
+  },
+  tour: { cutaway:false, dur:16, label:'Fly Around', points:[
+    [125,28,70],[70,10,92],[10,7,76],[-52,9,62],[-88,15,8],[-55,11,-58],
+    [10,7,-72],[72,9,-46],[108,13,-6],[88,16,26],[62,19,30] ] },
+  measureChips: [
+    { key:'sx-length', label:'Length · 73.5 m' },
+    { key:'sx-height', label:'Height · 20 m' } ],
+  erosionLab: true,
+  overview: "The oldest colossal sculpture in Egypt: a recumbent lion with a king's head, 73.5 m long and 20 m high, carved directly out of a limestone knoll — its body is literally the bedrock of the plateau. Mainstream Egyptology attributes it to Khafre, c. 2550 BCE. For most of recorded history only its head showed above the sand; full excavation came only in 1936. The deeply weathered enclosure around it is ground zero for the most famous dating controversy in archaeology — try the Erosion Lab below.",
+  kid: "A lion with a pharaoh's head, longer than two basketball courts — carved from one single giant piece of rock! For thousands of years it was buried up to its neck, so travellers just saw a huge mysterious head sticking out of the desert.",
+  measurements: [
+    ["Length", "73.5 m (paws to tail)"],
+    ["Height", "20.22 m"],
+    ["Width (haunches)", "≈ 19 m"],
+    ["Carved from", "in-place bedrock — three limestone layers (Members I–III)"],
+    ["Face width", "≈ 4.1 m"],
+    ["Nose", "≈ 1.6 m — lost before 1378 CE"],
+    ["Fully excavated", "1925–1936 (Émile Baraize)"]
+  ],
+  mainstream: "Carved for (and probably as a portrait of) pharaoh Khafre, c. 2558–2532 BCE: the quarry that produced its enclosure supplied his pyramid complex, a causeway links it to his valley temple, and the Sphinx Temple's blocks come from the enclosure itself. Erosion is explained by poor-quality limestone layers, salt crystallization and wind — no older civilization required.",
+  alternative: "Robert Schoch (geologist, Boston University) reads the enclosure's deep, rounded, vertically-fissured weathering as the signature of prolonged heavy rain — pushing the core carving back to 7000–5000 BCE or even the end of the Ice Age. John Anthony West and Graham Hancock build on this: the Sphinx as the surviving marker of a lost chapter of civilization, perhaps originally a full lion facing the Age-of-Leo sunrise.",
+  recent: "Colin Reader's drainage analysis argues for a modestly older — but still dynastic — Sphinx. Seismic surveys of the enclosure floor (Dobecki & Schoch) found uneven subsurface weathering; mainstream geologists dispute the calibration. Paleoclimate work shows real rains persisted into the early Old Kingdom, giving the consensus model more water than critics once assumed.",
+  debate: 'sphinx',
+  hotspots: [
+    { id:'sx-face', name:'The Face', sub:'Whose portrait — and why so small?', pos:[27,17,0], dist:90, interior:false, debate:'sphinx',
+      overview:"Four metres wide, framed by the royal nemes headdress, and famously noseless — the nose was deliberately broken off long before Napoleon (the musket-ball story is a myth; the historian al-Maqrizi blames the iconoclast Sa'im al-Dahr in 1378 CE). Fragments of a later ceremonial beard sit in the British Museum and Cairo. The head is strikingly small for the lion body — fuel for the hypothesis that it was recarved from something earlier.",
+      kid:"The nose is missing — but Napoleon's soldiers did NOT shoot it off (that's a myth!). It was broken on purpose over 600 years ago. And look how small the head is compared to the giant body… some people think the head was carved twice!",
+      measurements:[["Face width","≈ 4.1 m"],["Nose","≈ 1.6 m, lost before 1378 CE"],["Beard fragments","British Museum EA 58 + Cairo"],["Traces of paint","red ochre on the face"]],
+      mainstream:"A portrait of Khafre, consistent with 4th-Dynasty royal sculpture; the ‘small head’ reflects the shape of the natural rock knoll and the hard upper limestone layer the carvers had to work with.",
+      alternative:"Schoch and West: the head was recarved — possibly from an original lion's head — in dynastic times, explaining the proportions; Stadelmann argued the face is Khufu, not Khafre. A 1990s forensic-artist comparison disputed the Khafre match; Egyptologists found the method unconvincing.",
+      recent:"Photogrammetric and art-historical analyses remain split on the portrait question; paint traces confirm the Sphinx was once vividly coloured." },
+    { id:'sx-enclosure', name:'Enclosure & the Erosion Debate', sub:'The most argued-about rock surface on Earth', pos:[-5,5,-24], dist:110, interior:false, debate:'sphinx',
+      overview:"The Sphinx crouches in a quarried pit, and the pit's walls carry the evidence everyone fights over: deep, rounded, undulating vertical channels. Schoch reads them as the fingerprint of millennia of heavy rain — impossible in dynastic Egypt's climate, hence an older Sphinx. Mainstream geologists answer with salt crystallization (haloclasty), wet-sand wicking, wind, and the very poor limestone of Member II. Use the Erosion Lab buttons in this panel to visualize each reading on the enclosure walls.",
+      kid:"Look at the wavy grooves in the walls around the Sphinx — they're a 4,500-year-old detective mystery! Were they carved by RAIN long, long ago, or by salt and wind? Scientists are still arguing. Try the Erosion Lab buttons to see both ideas!",
+      measurements:[["Enclosure depth","up to ≈ 8–9 m below plateau"],["Weathering recession","locally 1 m+ into the walls"],["Worst layer","Member II — soft, marly limestone"],["Key papers","Schoch 1992 vs Harrell 1994, Gauri et al. 1995"]],
+      mainstream:"Salt crystallization, capillary moisture from sand cover, Nile-valley humidity and wind abrasion can produce rounded profiles within dynastic timescales — especially in Member II's weak layers; significant rain also persisted into the early Old Kingdom.",
+      alternative:"Schoch: the erosion is dominated by vertical rainwater runoff, requiring the wetter climate of 7000 BCE or earlier; the western enclosure wall's depth of weathering is his strongest exhibit. West and Hancock extend this into the lost-civilization thesis.",
+      recent:"Reader's middle position (early-dynastic drainage) keeps the geology debate honest; proposed cosmogenic-nuclide dating of the enclosure floor could one day settle the matter outright." },
+    { id:'sx-stele', name:'The Dream Stele', sub:"A 3,400-year-old thank-you note between the paws", pos:[33,4,0], dist:80, interior:false, debate:'sphinx',
+      overview:"Between the forepaws stands a 15-tonne granite stele raised by Thutmose IV around 1401 BCE. It tells how the prince, asleep in the Sphinx's noon shadow, dreamed the god Horemakhet promised him the throne in exchange for clearing the engulfing sand. Line 13 once carried the syllable ‘Khaf…’ — read by some as naming Khafre as builder — but the flake bearing it fell away in the 19th century, and the reading remains contested.",
+      kid:"This big stone slab is basically a thank-you note from a king! Prince Thutmose napped here and dreamed the Sphinx said: ‘Dig me out of this sand and I'll make you pharaoh.’ He did — and he became king. Deal honoured both ways!",
+      measurements:[["Material","red granite — likely a reused lintel from Khafre's temple"],["Mass","≈ 15 t"],["Date","c. 1401 BCE (Thutmose IV, year 1)"],["Famous line 13","the lost ‘Khaf…’ syllable"]],
+      mainstream:"Primary evidence of New Kingdom restoration and of the Sphinx's identification with Horemakhet; the possible Khafre mention aligns with the archaeological attribution.",
+      alternative:"Alternative authors note the stele proves only that the Sphinx was already ancient and sand-choked by 1401 BCE — and that the ‘Khaf’ reading is too damaged to settle authorship.",
+      recent:"Modern epigraphic studies rely on Young's 1820s facsimile of the lost line; the stele itself has been laser-cleaned and monitored for salt damage." },
+    { id:'sx-strata', name:'Body, Strata & Restorations', sub:'A geological layer-cake in a stone jacket', pos:[-15,9,9], dist:100, interior:false, debate:'sphinx',
+      overview:"The body is a cross-section of the plateau itself: hard Member I at the base, soft marly Member II through the torso (where decay is worst), and harder Member III at the neck and head. Since the New Kingdom the paws and flanks have been progressively jacketed in repair masonry — pharaonic, Greco-Roman, and modern. A 1980s cement-and-gypsum campaign caused damage that later teams had to undo, stone by stone.",
+      kid:"The Sphinx's body is like a giant layer-cake of different rocks — some hard, some crumbly. People have been patching it with little stone ‘bandages’ for over 3,000 years. Look closely at the paws: almost everything you see is repair stones!",
+      measurements:[["Member I","hard reef limestone — base & rump"],["Member II","soft, marly — most of the body, worst decay"],["Member III","harder — neck and head"],["Repair phases","New Kingdom → Saite → Roman → 1925–36 → 1980s–2000s"]],
+      mainstream:"The differential weathering of the three members explains much of the dramatic surface loss without exotic timescales; restoration history is well documented from Baraize's photographs onward.",
+      alternative:"Schoch argues the weathering pattern beneath the oldest repairs implies the damage was already ancient in pharaonic times — pushing the original carving earlier.",
+      recent:"Continuous monitoring (humidity, salt, pigeons!) by the Ministry of Antiquities; laser scans give a millimetre-precision baseline of the whole body." },
+    { id:'sx-rump', name:'Tunnels & Cavities', sub:"The Sphinx's basement rumours", pos:[-33,7,0], dist:100, interior:false, debate:'sphinx',
+      overview:"There really are holes in and under the Sphinx: a blind ‘rump passage’ rediscovered in 1978 (Lehner & Hawass), a niche behind the head, 19th-century treasure-hunters' borings, and natural karst fissures in the bedrock below. Seismic refraction work in the 1990s (Dobecki with Schoch) claimed a possible rectangular cavity under the left paw — the closest science has come to the legendary ‘Hall of Records.’ Mainstream geology reads the anomalies as natural solution cavities.",
+      kid:"Yes, the Sphinx has secret tunnels — for real! There's a dead-end passage in its rump and natural caves in the rock below. Some people dream there's a hidden library of lost knowledge under its paws… scientists haven't found one. Yet!",
+      measurements:[["Rump passage","blind shaft, re-explored 1978"],["Seismic survey","Dobecki & Schoch, 1991–92"],["Claimed anomaly","‘cavity’ under the left forepaw"],["Natural karst","documented fissures under the enclosure"]],
+      mainstream:"Documented voids are treasure-hunter borings, ancient cuttings, and natural karst; no excavation has found a constructed chamber, and randomly-placed cavities in fissured limestone are expected.",
+      alternative:"Edgar Cayce's ‘Hall of Records’ prophecy (a pre-flood archive beneath the Sphinx) shapes the popular imagination; Hancock and Bauval treated the seismic anomaly as a testable version of the legend.",
+      recent:"Ground-truthing the 1990s anomalies with modern GPR and microgravimetry remains undone — a cheap, decisive experiment waiting for permits." }
+  ]
+}
+],
+
+/* ============================ SCENERY ============================
+   Plateau context (no hotspots — promote to monuments later).
+   Positions in metres relative to Khufu's centre; +X east, +Z south
+   (Petrie 1883 / Glen Dash survey-derived inter-monument offsets). */
+scenery: [
+  { type:'pyramid', id:'khafre',   pos:[-334,0,354], height:136.4, halfBase:107.6, tip:true, courses:40,
+    note:"Pyramid of Khafre — 334 m W, 354 m S of Khufu; retains its summit casing to this day" },
+  { type:'pyramid', id:'menkaure', pos:[-610,0,739], height:65.5,  halfBase:51.4,  tip:false, courses:24, graniteBase:true,
+    note:"Pyramid of Menkaure — lowest 16 courses were cased in Aswan granite" },
+  { type:'pyramid', id:'queen-1',  pos:[168,0,14],   height:30.3,  halfBase:24.7,  tip:false, courses:10, note:"Queens' pyramid G1-a (Hetepheres)" },
+  { type:'pyramid', id:'queen-2',  pos:[168,0,69],   height:30,    halfBase:24.5,  tip:false, courses:10, note:"Queens' pyramid G1-b (Meritites)" },
+  { type:'pyramid', id:'queen-3',  pos:[168,0,124],  height:29,    halfBase:23.4,  tip:false, courses:10, note:"Queens' pyramid G1-c (Henutsen)" },
+  { type:'pyramid', id:'satellite',pos:[95,0,142],   height:13.8,  halfBase:10.9,  tip:false, courses:6,  note:"Khufu's satellite pyramid G1-d, at the SE corner" },
+  { type:'pyramid', id:'g3-a',     pos:[-575,0,830], height:28.3,  halfBase:22.1,  tip:false, courses:8,  note:"Menkaure queens' pyramid G3-a" },
+  { type:'pyramid', id:'g3-b',     pos:[-628,0,830], height:21,    halfBase:15.6,  tip:false, courses:7,  note:"Menkaure queens' pyramid G3-b" },
+  { type:'pyramid', id:'g3-c',     pos:[-681,0,830], height:21,    halfBase:15.8,  tip:false, courses:7,  note:"Menkaure queens' pyramid G3-c" },
+  { type:'ruin', id:'khufu-mortuary',   pos:[133,0,2],    size:[40,3.5,52], note:"Khufu's mortuary temple — basalt pavement survives" },
+  { type:'ruin', id:'khafre-mortuary',  pos:[-213,0,354], size:[45,3.5,55], note:"Khafre's mortuary temple" },
+  { type:'ruin', id:'khafre-valley',    pos:[402,0,478],  size:[44,6,44],   note:"Khafre's valley temple — best-preserved Old Kingdom temple" },
+  { type:'ruin', id:'sphinx-temple',    pos:[402,0,428],  size:[40,4,42],   note:"Sphinx Temple, directly before the paws" },
+  { type:'ruin', id:'menkaure-mortuary',pos:[-549,0,739], size:[42,3,48],   note:"Menkaure's mortuary temple" },
+  { type:'causeway', id:'khufu-causeway',    from:[153,0,-2],  to:[640,0,-66],  width:9,  note:"Khufu's causeway, bearing N of E toward the valley" },
+  { type:'causeway', id:'khafre-causeway',   from:[-190,0,360],to:[380,0,460], width:10, note:"Khafre's causeway, running ESE past the Sphinx to his valley temple" },
+  { type:'causeway', id:'menkaure-causeway', from:[-528,0,742],to:[-235,0,752],width:9,  note:"Menkaure's causeway (never finished)" },
+  { type:'mastabas', id:'east-cemetery', pos:[225,0,-15],  rows:3, cols:4, cell:[16,4.5,9], gap:[12,14], note:"Eastern cemetery G7000 — mastabas of the royal family" },
+  { type:'mastabas', id:'west-cemetery', pos:[-285,0,-65], rows:4, cols:5, cell:[18,4,10], gap:[13,12], note:"Western cemetery — officials' mastaba field" },
+  { type:'pit', id:'boat-pit-1', pos:[42,0,130],  size:[46,0.6,7], note:"Khufu ship pit — the cedar solar barque found 1954" },
+  { type:'pit', id:'boat-pit-2', pos:[-42,0,130], size:[46,0.6,7], note:"Second boat pit, opened 1987" }
+],
+
+/* ============================ DEBATES ============================ */
+debates: [
+  { id:'sphinx', title:'How Old Is the Sphinx?', status:'Active scholarly controversy',
+    intro:"The Great Sphinx sits just south-east of the pyramid, carved from the plateau's bedrock. Its weathering is the single most famous battlefield between mainstream and alternative chronology.",
+    mainstream:{ title:'Mainstream Consensus', points:[
+      { claim:"Carved c. 2558–2532 BCE for pharaoh Khafre", by:"Mark Lehner, Zahi Hawass", detail:"Quarry-and-temple stratigraphy ties the Sphinx to Khafre's pyramid complex; a causeway links it to his valley temple; the face is read as a royal portrait of the period." },
+      { claim:"Erosion explained without rewriting history", by:"James Harrell; K. Lal Gauri", detail:"Poor-quality limestone layers, salt crystallization (haloclasty), wet-sand wicking and Nile-valley humidity can produce the rounded profiles within dynastic timescales." },
+      { claim:"No archaeological trace of an older culture", by:"Egyptology consensus", detail:"Thousands of excavations on the plateau have produced no pottery, tools, burials or settlement debris older than the Early Dynastic horizon." }]},
+    alternative:{ title:'Alternative Hypotheses', points:[
+      { claim:"Deep vertical rain-erosion implies a much older Sphinx", by:"Robert Schoch (geologist, Boston University)", detail:"Schoch argues the enclosure's rolling, deeply fissured weathering is the signature of prolonged heavy rainfall — pushing the core body back to at least 7000–5000 BCE, later revised toward the end of the last Ice Age (~9700 BCE)." },
+      { claim:"The Sphinx is a marker of a lost civilization", by:"Graham Hancock, John Anthony West", detail:"West initiated the geology argument; Hancock folds it into a global thesis of a civilization destroyed around the Younger Dryas (c. 10,800–9600 BCE), with Giza preserving its memory." },
+      { claim:"An earlier — but still dynastic — Sphinx", by:"Colin Reader (geologist)", detail:"A middle position: drainage and erosion suggest the Sphinx slightly predates Khafre, perhaps early Old Kingdom — older than consensus, far younger than Schoch." }]},
+    recent:{ title:'Recent Findings', points:[
+      { claim:"Seismic surveys of the enclosure floor", by:"Schoch & Dobecki (refraction studies)", detail:"Subsurface weathering depths around the enclosure are uneven; Schoch reads this as evidence of great age on three sides — mainstream geologists dispute the calibration." },
+      { claim:"Climate data complicates both sides", by:"Paleoclimatology of the African Humid Period", detail:"Significant rains did persist into the early Old Kingdom (~2350 BCE ends the humid period), giving mainstream models more water to work with than critics once assumed." }]},
+    verdict:"Consensus remains firmly with Khafre, but the erosion question produced genuinely useful geology. Watch for: enclosure-floor dating techniques (cosmogenic nuclides) that could one day settle it." },
+
+  { id:'construction', title:'How Was It Built?', status:'Mostly solved — with live disputes',
+    intro:"2.3 million blocks in ~20 years means roughly one block placed every 2–3 minutes of daylight. The question is not whether Egyptians could — the evidence says they did — but exactly how.",
+    mainstream:{ title:'Mainstream Consensus', points:[
+      { claim:"Ramps, sledges, levers — and superb organization", by:"Mark Lehner, AERA excavations", detail:"The workers' city (Heit el-Ghurab) housed and fed rotating crews of ~4,000–20,000 paid labourers organized in named gangs. Wall paintings and physics experiments (wet-sand sledging, Bonn et al. 2014) show the transport methods." },
+      { claim:"A steep ramp with stairways and post-holes, found in situ", by:"Yannis Gourdon & Roland Enmarch, Hatnub quarry (2018)", detail:"A 4th-Dynasty ramp system at Hatnub shows blocks were hauled up slopes >20% using posts as pulley-like anchors — direct archaeological evidence of lifting technique." },
+      { claim:"The logistics are documented in writing", by:"Pierre Tallet, Wadi al-Jarf papyri (2013)", detail:"Inspector Merer's logbook records his crew ferrying Tura casing stone to Giza in Khufu's year 26–27 — the oldest inscribed papyri ever found, and effectively a foreman's diary of this exact building site." }]},
+    alternative:{ title:'Alternative Hypotheses', points:[
+      { claim:"An internal spiral ramp", by:"Jean-Pierre Houdin (architect), 2007", detail:"External ramps of feasible slope would be absurdly large. Houdin proposes the upper pyramid was built from an internal corkscrew ramp — possibly matching a spiral density anomaly seen in a 1986 microgravimetry survey. Taken seriously as engineering; unproven archaeologically." },
+      { claim:"Cast geopolymer ‘concrete’ blocks", by:"Joseph Davidovits (materials chemist)", detail:"Some blocks were cast in place from dissolved limestone slurry, explaining tight joints. Most geologists reject it: the stone's fossils and fabric match natural quarry limestone." },
+      { claim:"Inherited high technology", by:"Graham Hancock; Christopher Dunn", detail:"Precision (drill cores, granite work) read as evidence of advanced tools or a lost engineering tradition. Experimental archaeology (Denys Stocks) has replicated the tool marks with copper, sand abrasive and patience — the rebuttal alternative authors must answer." }]},
+    recent:{ title:'Recent Findings', points:[
+      { claim:"The river came to the site", by:"Sheisha et al., PNAS 2022", detail:"Pollen cores show a now-vanished ‘Khufu branch’ of the Nile ran near the plateau with high water levels exactly during the 4th Dynasty — the missing transport highway, with harbours found by Lehner's team." },
+      { claim:"A possible water-lift debate reignited (2024–2025)", by:"Landreau et al. (preprint, contested)", detail:"A claim that the Saqqara step pyramid used hydraulic lifts made headlines; Egyptologists pushed back hard on the hydrology. Worth knowing because it shows the method debate is still alive even inside academia." }]},
+    verdict:"Ramps + sledges + organization is overwhelmingly supported for the bulk of the work; the genuinely open question is the upper third — where Houdin's internal ramp remains the most interesting unfalsified alternative." },
+
+  { id:'hidden-chambers', title:'Voids, Corridors & the Radar Controversy', status:'Confirmed discoveries + contested claims',
+    intro:"The pyramid is demonstrably not fully mapped: twenty-first-century physics has already found two new spaces. The fight is over how much more is down there — and over one viral radar claim.",
+    mainstream:{ title:'Mainstream Consensus', points:[
+      { claim:"The structure is essentially understood; voids are likely structural", by:"Zahi Hawass; most Egyptologists", detail:"New voids are real but probably relieving spaces or construction features, not treasure chambers. Extraordinary claims about vast underground complexes require excavation-grade evidence." }]},
+    alternative:{ title:'Alternative Hypotheses', points:[
+      { claim:"Vast structures beneath the plateau (SAR doppler tomography)", by:"Filippo Biondi & Corrado Malanga, 2022 paper; 2025 ‘Khafre Project’ press claims", detail:"Synthetic-aperture-radar processing is claimed to reveal deep vertical shafts, spiral structures and chambers hundreds of metres under Khafre's pyramid. The 2022 paper passed peer review in a remote-sensing journal; the dramatic 2025 claims did not. Geophysicists (e.g. Lawrence Conyers) say radar physically cannot penetrate that deep in limestone." },
+      { claim:"A hall of records", by:"Tradition popularized via Edgar Cayce; echoed by Hancock/Bauval", detail:"A prophesied archive beneath the Sphinx. No instrument has ever detected it; known cavities under the Sphinx are natural fissures and small dead-end shafts (explored 1990s)." }]},
+    recent:{ title:'Recent Findings', points:[
+      { claim:"The Big Void — a 30 m+ cavity above the Grand Gallery", by:"ScanPyramids / Morishima et al., Nature 2017", detail:"Detected independently by three muon-detection technologies. Cross-section similar to the Gallery itself. Purpose unknown: relieving structure? second gallery? construction space?" },
+      { claim:"North Face Corridor — confirmed and photographed", by:"ScanPyramids, Nature Communications 2023", detail:"A 9 m corridor behind the entrance chevrons, predicted by muography, then verified by endoscope camera — proof the method finds real rooms." },
+      { claim:"Muography vs radar — why physicists trust one and not the other", by:"Methodological consensus", detail:"Muons genuinely traverse hundreds of metres of stone; satellite SAR reflects from (at best) the top metres of dry rock. That asymmetry is the heart of the Biondi controversy." }]},
+    verdict:"Hidden spaces: confirmed, twice, by muons. Hidden cities: unsupported by physics so far. The honest position is genuine excitement about the Big Void and hard skepticism about deep-radar claims — pending independent verification." },
+
+  { id:'orion', title:'The Orion Correlation', status:'Popular hypothesis vs astronomical critique',
+    intro:"Do the three Giza pyramids mirror the three stars of Orion's Belt? Robert Bauval's 1994 idea is the most elegant — and most contested — pattern ever proposed on the plateau.",
+    mainstream:{ title:'Mainstream Consensus', points:[
+      { claim:"Orion mattered — but the map doesn't work", by:"Ed Krupp (Griffith Observatory)", detail:"To match the pyramids to the Belt you must invert either the sky or the ground: Giza's layout runs the ‘wrong way’ relative to north. Krupp's upside-down-map critique remains the central objection." },
+      { claim:"The angles don't fit", by:"Anthony Fairall (astronomer)", detail:"The Belt's angle to the celestial meridian (~50–54°) doesn't match the pyramids' diagonal (~38°) in 10,500 BCE — undermining the ‘First Time’ dating specifically." },
+      { claim:"Stellar religion is real; the correlation is overreach", by:"Egyptology consensus", detail:"Pyramid Texts do send the king to Orion (Sah) and Sirius; the King's south shaft pointing at Alnitak is widely accepted. A three-star ground plan is where consensus stops." }]},
+    alternative:{ title:'Alternative Hypotheses', points:[
+      { claim:"Giza is Orion's Belt built in stone", by:"Robert Bauval & Adrian Gilbert, The Orion Mystery (1994)", detail:"The relative sizes and offsets of the three pyramids echo Alnitak, Alnilam and Mintaka; the Milky Way maps to the Nile. Bauval argues the plan encodes a unified master design." },
+      { claim:"The layout time-stamps 10,500 BCE", by:"Hancock & Bauval, The Message of the Sphinx (1996)", detail:"Precession slowly rotates the sky; Belt-pyramid match plus a leonine Sphinx facing the equinox sunrise in the Age of Leo is read as a deliberate epoch marker for the ‘First Time.’" },
+      { claim:"The shafts corroborate the theme", by:"Bauval, building on Badawy & Trimble (1964)", detail:"Four shafts targeting Alnitak, Thuban, Sirius and Kochab around 2500 BCE — alignment data that even critics largely accept, whatever it means." }]},
+    recent:{ title:'Recent Findings', points:[
+      { claim:"Refined shaft angles from laser surveys", by:"Engineering studies, 2000s–present", detail:"Modern measurement keeps the c. 2500 BCE stellar alignments plausible for the King's Chamber shafts — the strongest surviving piece of the stellar-design case." },
+      { claim:"Statistical pattern-matching critiques", by:"Skeptical literature (e.g. Fagan, Krupp)", detail:"With thousands of stars and free choice of scale and rotation, three-point matches are easy to find. The methodological lesson now appears in archaeoastronomy textbooks." }]},
+    verdict:"The shaft alignments are good science; the Belt ground-plan is contested; the 10,500 BCE dating is rejected by astronomers. A perfect case study in how a beautiful idea meets hard methodology." }
+],
+
+/* ============================ VAULT ============================ */
+vaultCats: [
+  { id:'all', label:'All' },
+  { id:'society', label:'Society & Daily Life' },
+  { id:'religion', label:'Religion & Neteru' },
+  { id:'astronomy', label:'Astronomy & Alignments' },
+  { id:'engineering', label:'Engineering & Technology' },
+  { id:'discoveries', label:'Recent Discoveries' },
+  { id:'mysteries', label:'Mysteries & Debates' }
+],
+
+vault: [
+  { id:'workers', cat:'society', title:'Who Really Built the Pyramid',
+    summary:"Not slaves. A purpose-built city of bakers, brewers and rotating crews of paid labourers — excavated, named, and even buried with honour.",
+    kid:"Surprise: the pyramid was NOT built by slaves! Real diggers found the builders' whole town — with bakeries, beer kitchens and bunk rooms. The workers even scribbled team names inside the pyramid, like ‘Friends of Khufu’. Go team!",
+    images:[ { src: WIKI('All_Gizah_Pyramids.jpg'), cap:"The plateau the crews built — Khufu, Khafre and Menkaure (Wikimedia Commons)" } ],
+    facts:[["Workers' city","Heit el-Ghurab (‘Lost City’), excavated by Mark Lehner / AERA"],["Workforce","≈ 4,000 core builders; up to ~20,000+ with support crews"],["Diet","bread, beer, and prime beef — provisioning on an industrial scale"],["Organization","named gangs: ‘Friends of Khufu,’ ‘Drunkards of Menkaure’"],["Builders' cemetery","found 1990 (Hawass): healed fractures show medical care"]],
+    body:["Herodotus' tale of 100,000 slaves dominated for 2,400 years — and excavation demolished it. South-east of the Sphinx, Mark Lehner's team uncovered a planned city with galleries that slept thousands, bakeries with bread moulds in heaps, breweries, granaries and corrals. The bones tell the menu: enormous quantities of cattle, sheep and goat — premium protein for valued workers, not rations for the enslaved.","Graffiti hidden inside the pyramid's relieving chambers names rival work gangs with affectionate, boastful titles. The builders' cemetery overlooking the site contains workers buried with bread and beer for the afterlife, their skeletons showing hard labour and properly set broken bones. The picture is a national project — likely rotating corvée labour serving out tax obligations, fed and housed by the state, building their god-king's resurrection machine.","Alternative-history claims rarely engage this material directly; any theory of who built Giza now has to account for the city of the people who demonstrably did."],
+    sources:"Lehner & Hawass, Giza and the Pyramids (2017); AERA excavation reports." },
+  { id:'daily-life', cat:'society', title:'Daily Life on the Nile',
+    summary:"Bread and beer as wages, linen kilts, board games, eye-paint, love poems — the texture of the civilization that built mountains.",
+    kid:"Ancient Egyptian kids played board games and had toy animals; grown-ups got paid in bread and beer instead of money; and EVERYONE — even the pharaoh — wore black eye-makeup. Partly for style, partly as ancient sunglasses!",
+    facts:[["Staples","emmer bread + barley beer (safe hydration & calories)"],["Currency","none — grain, cloth and copper by weight"],["Homes","mudbrick, flat roofs for sleeping in heat"],["Leisure","senet boards, hunting, festivals with public processions"],["Women's status","could own property, divorce, run businesses — unusual for the era"]],
+    body:["Egyptian life ran on the river's pulse: flood (akhet), growing (peret), harvest (shemu). During the inundation, when fields drowned, the state could mobilize farmers for building projects — one reason megaprojects fit the calendar.","Everyone from pharaoh to fisherman wore linen and kohl eye-paint (partly cosmetic, partly sun-glare and fly protection). Children played with carved animals; adults played senet, a race game freighted with afterlife symbolism. Music, perfume cones, garden pools and love poetry fill tomb walls — these were people who liked being alive, which is exactly why they invested so much in continuing after death.","Scribes sat at the social hinge: a literate few who tracked grain, labour and taxes, making the bureaucracy that could feed twenty thousand builders possible."],
+    sources:"Standard references: Brewer & Teeter, Egypt and the Egyptians; tomb iconography of Saqqara and Giza mastabas." },
+  { id:'neteru', cat:'religion', title:'The Neteru & Ma’at',
+    summary:"Gods as principles of nature, a universe balanced on ma’at, and the soul as a five-part system worth preserving forever.",
+    kid:"Egyptian gods often have animal heads because each animal stood for a superpower: falcon = far-seeing sky king, jackal = guardian of the dead. And the most important idea of all was ma’at — keeping the whole world fair, truthful and in balance.",
+    facts:[["Neteru","the gods — also readable as ‘principles/powers’ of nature"],["Ma’at","truth-order-balance; the pharaoh's core job was upholding it"],["Soul parts","ka (life-force), ba (personality), akh (transfigured spirit), plus name & shadow"],["Key myth","Osiris murdered by Set, restored by Isis — resurrection template"],["Mummification","preserving the body as anchor for the ka"]],
+    body:["Egyptian religion is best read as physics-by-poetry: Ra's solar barque crossing the sky and battling the serpent of chaos each night is a theory of cosmic maintenance. The opposite of ma’at was isfet — entropy, injustice, drought. Temples and pyramids were machines for keeping the balance.","The Osiris cycle gave every Egyptian a resurrection story: the good god killed and dismembered, reassembled by Isis, conceiving Horus, judging the dead. The pharaoh was Horus alive and Osiris in death — which is what a pyramid is for: staging the king's transformation into an akh among the stars.","Esoteric writers (Schwaller de Lubicz, and through him West and Hancock) read the neteru as a sophisticated symbolic science encoding consciousness and cosmos. Egyptologists treat that as projection — but both sides agree the theology is far subtler than ‘animal-headed idols.’"],
+    sources:"Pyramid Texts (Faulkner trans.); Assmann, The Search for God in Ancient Egypt; Wilkinson, The Complete Gods and Goddesses." },
+  { id:'resurrection', cat:'religion', title:'The Pyramid as Resurrection Machine',
+    summary:"Why a tomb is shaped like a sunbeam: benben stones, Pyramid Texts, and a staircase of light aimed at the imperishable stars.",
+    kid:"Why a pyramid shape? Look at sunbeams breaking through clouds — that fan of light was the king's escalator to the sky! The pyramid is a sunbeam built from stone, with star-tunnels for the king's spirit to fly through.",
+    facts:[["Name","Akhet-Khufu — ‘Horizon of Khufu’"],["Form","the benben: primeval mound + frozen sunbeam"],["Pyramid Texts","oldest large religious corpus on Earth (Unas, c. 2350 BCE)"],["Destinations","circumpolar stars (north) and Orion/Sah (south)"],["Complex","valley temple → causeway → mortuary temple → pyramid"]],
+    body:["A pyramid is theology in limestone. Its shape quotes the benben — the mound that rose from the waters of creation — and the way sunlight fans through Nile haze. Spells carved a century later in Unas' pyramid say it plainly: ‘A staircase to heaven is laid for him, so that he may mount up to heaven thereby.’","The internal geometry participates: northern passages aim the king at the circumpolar stars that never set (‘the imperishable ones’), southern shafts at Orion, the celestial form of Osiris. The pyramid was one component in a resurrection apparatus running from river to tomb — valley temple for purification, causeway for procession, mortuary temple for the eternal feeding of the ka.","This religious reading is one of the strongest mainstream answers to ‘why so precise?’: cosmic machinery had to be cosmically accurate. Sloppy alignment would be a theological defect, not just an engineering one."],
+    sources:"Pyramid Texts; Lehner, The Complete Pyramids; Allen, The Ancient Egyptian Pyramid Texts." },
+  { id:'alignments', cat:'astronomy', title:'Aligning to the Sky',
+    summary:"How do you find true north within 1/15° with string, wood and eyesight? The candidate methods — and what star religion has to do with it.",
+    kid:"No compass, no GPS, no lasers — yet they aimed the pyramid almost PERFECTLY north. How? By watching the stars spin around the sky's still point, with nothing but string, sticks and patience. Try finding north tonight without your phone!",
+    facts:[["Accuracy","≈ 3.4 arcminutes from true north (Dash survey)"],["Leading method","simultaneous transit of Kochab & Mizar (Spence, Nature 2000)"],["Solar alternative","equinox shadow-tracking with a gnomon (Glen Dash)"],["Calendar","365 days; Sirius' heliacal rising marked New Year"],["Orion & Sirius","Sah (Osiris) and Sopdet (Isis) — the afterlife's address"]],
+    body:["The Great Pyramid is aligned to true — not magnetic — north with an error smaller than the width of the full moon. Kate Spence's elegant solution: when the stars Kochab and Mizar stood vertically stacked, the line between them passed through the celestial pole around 2480 BCE. Her method even explains why earlier and later pyramids err in opposite directions, drifting with precession — an accidental dating tool.","Glen Dash proposed a simpler solar method: track a gnomon's shadow tip through an equinox day and you get an east–west line, with a slight counterclockwise rotation exactly like the one his surveys measured at Giza. Either way: string, wood, patience — no anachronistic technology required.","Sky-watching saturated the culture: 36 decan star-groups sliced the night into hours; Sirius' dawn return predicted the flood. When Bauval points shafts at Orion, the religious motive is mainstream; only the master-plan extrapolations are contested. See the Theory Lab's Orion debate for both sides."],
+    sources:"Spence, Nature 408 (2000); Dash Foundation reports (2015–2017); Belmonte, Egyptian archaeoastronomy surveys." },
+  { id:'tools', cat:'engineering', title:'Copper, Dolerite & Ingenuity',
+    summary:"Granite cut with copper and sand, blocks moved on water-wetted sledges, and a 4,500-year-old ramp with its post-holes still in place.",
+    kid:"How do you cut super-hard granite with soft copper? Trick question — the SAND does the cutting! Copper saws just drag hard desert sand back and forth like liquid sandpaper. And wetting the sand in front of a sledge makes giant blocks slide almost twice as easily.",
+    facts:[["Cutting hard stone","copper saws/drills + quartz sand abrasive (sand does the cutting)"],["Shaping granite","hand-held dolerite pounders — hundreds found at Aswan"],["Transport","wooden sledges; wetting sand halves friction (Bonn et al., 2014)"],["Lifting evidence","Hatnub quarry ramp with stairways & post-holes (2018)"],["Replication","Denys Stocks reproduced drill cores & saw marks experimentally"]],
+    body:["The toolkit sounds impossible — copper against granite — until you add the trick: the copper is just a carrier for quartz sand, which is harder than granite's feldspar. Denys Stocks spent decades cutting, drilling and hollowing stone with replica tools, reproducing the striations on ancient drill cores that Christopher Dunn cites as machine marks. The debate between those two readings is exactly the kind the Codex wants you to weigh.","Physics joined archaeology in 2014 when Daniel Bonn's lab showed that wetting sand in front of a sledge cuts the pulling force nearly in half — and a tomb painting from el-Bersheh shows a worker pouring water before a colossus' sledge, a detail once dismissed as ritual.","The 2018 Hatnub discovery delivered what skeptics demanded: an actual 4th-Dynasty ramp, steep, flanked by stairways and post-holes for lever/rope anchors. It doesn't solve the pyramid's upper courses — see the Theory Lab — but it ends the claim that no lifting evidence exists."],
+    sources:"Stocks, Experiments in Egyptian Archaeology (2003); Bonn et al., Phys. Rev. Lett. (2014); Gourdon & Enmarch, Hatnub reports (2018)." },
+  { id:'logistics', cat:'engineering', title:'Logistics of a Megaproject',
+    summary:"One block every 2–3 minutes, a foreman's diary, harbours in the desert — and the lost river branch that made it all float.",
+    kid:"The Nile used to have an extra branch that flowed right up to the pyramids — a watery highway for stone-carrying boats! Scientists found its traces buried under the sand in 2022. The desert used to have a harbour!",
+    images:[ { src: WIKI('Kheops-Pyramid.jpg'), cap:"2.3 million blocks, one river, twenty years (Wikimedia Commons)" } ],
+    facts:[["Rate required","≈ 1 block placed every 2–3 daylight minutes for ~20 years"],["Written record","Merer's logbook, Wadi al-Jarf (oldest inscribed papyri known)"],["Water highway","‘Khufu branch’ of the Nile (PNAS 2022, sediment cores)"],["Harbours","basins at Giza located by AERA excavations"],["Supply web","Tura limestone, Aswan granite (800 km), Lebanese cedar"]],
+    body:["Treat the pyramid as an operations problem and it becomes even more impressive: quarry, dress, move and set roughly 230 million kilograms of stone per year, every year, for two decades — while feeding everyone. The administrative state, not the ramp, is the real wonder.","In 2013 Pierre Tallet's team found the receipts. In caves at Wadi al-Jarf on the Red Sea lay the papyrus logbook of inspector Merer, whose 40-man boat crew spent months shuttling casing stone from Tura to ‘Akhet-Khufu,’ stopping at storage depots, drawing rations — dated to Khufu's 26th–27th year. It is the closest thing to surveillance footage of the construction we will ever get.","The final puzzle piece surfaced in 2022: sediment cores rich in fossil pollen proved a now-vanished branch of the Nile ran high beside the plateau precisely during the 4th Dynasty. Stone barges docked at harbours whose remains Lehner had already found. When the branch silted up centuries later, the age of giant pyramids ended with it — geography as destiny."],
+    sources:"Tallet, Les papyrus de la mer Rouge I (2017); Sheisha et al., PNAS 119 (2022); Lehner, AERA field reports." },
+  { id:'scans', cat:'discoveries', title:'Scanning the Pyramid (2015–now)',
+    summary:"Cosmic rays found two new spaces inside the Great Pyramid. Satellite radar claims found a buried city — or did it? How to tell the difference.",
+    kid:"Scientists can't take the pyramid apart — so they X-ray it with invisible space particles called muons that rain down from the sky and pass through stone. In 2017 the muons revealed a hidden room over 30 metres long that NO ONE has ever entered. It's still sealed today!",
+    facts:[["Muography","cosmic-ray muons pass through rock; voids leave ‘bright’ trails"],["Big Void","30+ m cavity above the Grand Gallery (Nature, 2017)"],["North Face Corridor","9 m space confirmed & photographed (2023)"],["SAR claims","Biondi & Malanga: deep shafts/chambers (2022–2025) — unverified"],["Key physics","muons: hundreds of metres of stone; radar: metres at best"]],
+    body:["Muography images stone the way an X-ray images bone: detectors count cosmic-ray muons arriving through the pyramid, and a cavity shows up as a surplus. Three independent technologies — nuclear emulsion film, scintillators, gas detectors — agreed on the Big Void in 2017, which is why even conservative Egyptologists accept it exists. In 2023 the method was vindicated end-to-end when a predicted corridor behind the north-face chevrons was photographed by endoscope.","The 2022–2025 claims by Filippo Biondi and Corrado Malanga are a different animal: synthetic-aperture-radar post-processing said to reveal spiral shafts and chambers down to 600+ metres beneath Khafre's pyramid. The 2025 announcements arrived by press conference, not peer review, and geophysicists object that radar of that wavelength physically cannot return signal from such depths in limestone.","The Codex's framing: muography earned trust by prediction and verification; the SAR claims could earn the same by independent replication and a drill core. Until then, one is a discovery and the other is a hypothesis with a megaphone."],
+    sources:"Morishima et al., Nature 552 (2017); Procureur et al., Nat. Commun. 14 (2023); Biondi & Malanga, Remote Sensing (2022) + critical commentary (Conyers et al.)." },
+  { id:'wadi', cat:'discoveries', title:"The World's Oldest Logbook",
+    summary:"Inspector Merer's papyrus diary — found in Red Sea caves in 2013 — records hauling casing stone to the Great Pyramid, in real time.",
+    kid:"Imagine finding a 4,500-year-old work diary! A boat captain named Merer wrote down his crew's every trip hauling shiny white stones to the pyramid: ‘Day 25: hauled stones at Tura, slept at Tura.’ It's the oldest ‘what I did at work today’ note ever found.",
+    facts:[["Found","Wadi al-Jarf, Red Sea harbour caves, 2013 (Pierre Tallet)"],["Author","inspector Merer, leader of a ~40-man boat crew"],["Date","year 26–27 of Khufu — the pyramid's final phase"],["Cargo","Tura limestone casing blocks, 2–3 round trips per 10-day week"],["Bonus find","the world's oldest engineered harbour, anchors still in place"]],
+    body:["‘Day 25: Inspector Merer spends the day with his phyle hauling stones in Tura South; spends the night at Tura South.’ Entries like this, in crisp hieratic columns, make up the oldest inscribed papyri ever found — a middle manager's worklog from the exact months the Great Pyramid was being finished.","Merer's crew, a phyle called ‘The Followers of the Boat Named After Snefru,’ ran limestone from the Tura quarries across the river network to ‘Akhet-Khufu,’ reporting to a vizier named Ankhhaef — known from his bust in Boston as Khufu's half-brother and overseer of works. Names, rations, schedules: the bureaucracy of wonder.","For the debates in the Theory Lab, this document is quietly decisive. Any hypothesis relocating the pyramid's construction to a lost civilization must explain why Khufu's own administration kept shipping receipts for its casing stones."],
+    sources:"Tallet & Marouard, Near Eastern Archaeology (2014); Tallet, Les papyrus de la mer Rouge I (2017)." },
+  { id:'sphinx-time', cat:'discoveries', title:'The Sphinx Through Time',
+    summary:"Buried to its neck for millennia, dug out at least four times, patched by pharaohs and engineers — the biography of a statue.",
+    kid:"For most of history the Sphinx was a giant head sitting on the sand — its whole lion body was buried underneath! People dug it out at least four times. The last big dig took ELEVEN years of shovelling (1925–1936).",
+    images:[
+      { src: WIKI('Great_Sphinx_of_Giza_-_20080716a.jpg'), cap:"The Sphinx fully excavated, with Khafre's pyramid behind (Wikimedia Commons)" },
+      { src: WIKI('Egypt.Giza.Sphinx.02.jpg'), cap:"Face to face with Horemakhet (Wikimedia Commons)" } ],
+    facts:[["First recorded clearing","Thutmose IV, c. 1401 BCE (Dream Stele)"],["Other clearings","Ramesside era; Saite/Roman; 1817 (Caviglia); 1925–36 (Baraize)"],["Buried state","sand reached the neck for most of the last 2,000 years"],["Modern campaigns","1980s gypsum/cement (damaging) → 1990s–2000s careful re-restoration"],["Today","laser-scanned, salt-monitored, visitor-managed"]],
+    body:["The Sphinx has spent more of its life buried than visible. Sand is both its enemy and its preservative: each burial halted wind erosion and each clearing restarted it, which is one reason the weathering record is so hard to read — and so easy to argue about.","Thutmose IV's dream-driven excavation around 1401 BCE is the first recorded heritage-restoration project in history. Ramesside princes, Saite priests, Roman engineers, the Genoese adventurer Caviglia (1817), and finally Émile Baraize (1925–1936) all took their turn with the sand. Baraize's eleven-year campaign gave the modern world its first full view of the lion body — and his thousands of photographs are now a priceless baseline for every restoration debate.","The statue's modern biography is a cautionary tale in conservation: the 1980s campaign mortared the paws in hard cement and gypsum that trapped salt and moisture, shedding flakes within years. The careful hand-cut limestone repairs that replaced it are the current best practice — and a reminder that even preserving the past is an experiment."],
+    sources:"Lehner, The ARCE Sphinx Project reports; Hawass & Lehner, Giza and the Pyramids (2017)." },
+  { id:'lost-civ', cat:'mysteries', title:'The Lost Civilization Hypothesis',
+    summary:"Hancock's grand thesis — a seafaring culture erased at the Younger Dryas, remembered at Giza. The strongest version, and the strongest rebuttals.",
+    kid:"Some storytellers think a forgotten super-ancient civilization taught the Egyptians their tricks. It's an exciting idea! But here's the detective's problem: a whole civilization leaves TONS of clues — trash, tools, pots, houses — and so far, none have been found. The mystery stays open… and the digging continues.",
+    facts:[["Core claim","advanced pre-Ice-Age-end civilization, destroyed c. 12,800–9600 BCE"],["Trigger","Younger Dryas impact hypothesis (contested in geology)"],["Exhibit A","Göbekli Tepe: monumental architecture from c. 9600 BCE"],["At Giza","Orion/10,500 BCE reading + Schoch's Sphinx geology"],["Mainstream reply","unbroken local development; zero artifacts of any such culture"]],
+    body:["Graham Hancock's argument, refined over thirty years: civilization is older than we think; a cataclysm at the Younger Dryas boundary erased an advanced maritime culture; survivors seeded knowledge — astronomy, architecture, myth — among hunter-gatherers, and Giza encodes the memory. Göbekli Tepe, genuinely built by pre-agricultural people around 9600 BCE, proved organized monumental construction predates farming and gave the thesis its strongest real anchor.","The mainstream response is not a cover-up but a demand for evidence-in-the-ground: a civilization leaves trash — pottery, harbours, mines, fields, cemeteries — and across thousands of excavated sites none of it appears. Egypt specifically shows a continuous, well-dated developmental ladder from Badari villages through Naqada chiefdoms to dynastic kingdom: no gap for inheritance, and the pyramids themselves show 150 years of visible trial-and-error (Saqqara's steps, Meidum's collapse, the Bent Pyramid's mid-course correction) — odd behaviour for recipients of a finished science.","The Codex keeps this entry in ‘Mysteries’ because pieces of it are live: the Younger Dryas impact debate continues in the geophysics literature, Göbekli Tepe really did rewrite prehistory's ceiling, and Schoch's erosion argument is made by a credentialed geologist. The grand synthesis, though, remains unsupported where it counts: in the dirt."],
+    sources:"Hancock, Fingerprints of the Gods (1995) / Magicians of the Gods (2015); Dibble et al. critiques; Schmidt, Göbekli Tepe reports." }
+]
+});
+})();
